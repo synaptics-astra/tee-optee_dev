@@ -1,5 +1,5 @@
-#ifndef _out_arm_synaptics_platypus_release_include_generated_conf_h_
-#define _out_arm_synaptics_platypus_release_include_generated_conf_h_
+#ifndef _out_arm_synaptics_platypus_release_dev_include_generated_conf_h_
+#define _out_arm_synaptics_platypus_release_dev_include_generated_conf_h_
 #define CFG_8250_UART 1
 /* CFG_AES_GCM_TABLE_BASED is not set */
 #define CFG_APB_TIMER 1
@@ -240,7 +240,7 @@
 /* CFG_TEE_BENCHMARK is not set */
 #define CFG_TEE_CORE_DEBUG 1
 #define CFG_TEE_CORE_EMBED_INTERNAL_TESTS 1
-#define CFG_TEE_CORE_LOG_LEVEL 0
+#define CFG_TEE_CORE_LOG_LEVEL 1
 #define CFG_TEE_CORE_MALLOC_DEBUG 1
 #define CFG_TEE_CORE_NB_CORE 4
 #define CFG_TEE_CORE_TA_TRACE 1

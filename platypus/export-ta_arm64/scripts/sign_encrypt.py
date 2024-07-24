@@ -19,7 +19,7 @@ enc_key_type = {'SHDR_ENC_KEY_DEV_SPECIFIC': 0x0,
 TEE_ATTR_RSA_MODULUS = 0xD0000130
 TEE_ATTR_RSA_PUBLIC_EXPONENT = 0xD0000230
 
-SHDR_BOOTSTRAP_TA = 1
+SHDR_BOOTSTRAP_TA = 0
 SHDR_ENCRYPTED_TA = 2
 SHDR_SUBKEY = 3
 SHDR_MAGIC = 0x4f545348
@@ -406,8 +406,8 @@ class BinaryImage:
                                 len(self.tag))
 
         self.__pack_img(SHDR_ENCRYPTED_TA, sig_algo)
-        self.ta_uuid = uuid.bytes
-        self.ta_version = struct.pack('<I', ta_version)
+        #self.ta_uuid = uuid.bytes
+        #self.ta_version = struct.pack('<I', ta_version)
         self.img_digest = self.__calc_digest()
 
     def set_bootstrap_ta(self, sig_algo, uuid, ta_version):
@@ -415,8 +415,8 @@ class BinaryImage:
 
         self.img = self.inf
         self.__pack_img(SHDR_BOOTSTRAP_TA, sig_algo)
-        self.ta_uuid = uuid.bytes
-        self.ta_version = struct.pack('<I', ta_version)
+        #self.ta_uuid = uuid.bytes
+        #self.ta_version = struct.pack('<I', ta_version)
         self.img_digest = self.__calc_digest()
 
     def set_subkey(self, sign_algo, name, uuid, subkey_version, max_depth,
@@ -496,10 +496,10 @@ class BinaryImage:
         offs += sig_size
 
         if img_type == SHDR_BOOTSTRAP_TA or img_type == SHDR_ENCRYPTED_TA:
-            self.ta_uuid = self.inf[offs:offs + UUID_SIZE]
-            offs += UUID_SIZE
-            self.ta_version = self.inf[offs:offs + 4]
-            offs += 4
+            #self.ta_uuid = self.inf[offs:offs + UUID_SIZE]
+            #offs += UUID_SIZE
+            #self.ta_version = self.inf[offs:offs + 4]
+            #offs += 4
             if img_type == SHDR_ENCRYPTED_TA:
                 self.ehdr = self.inf[offs: offs + EHDR_SIZE]
                 offs += EHDR_SIZE
@@ -575,14 +575,14 @@ class BinaryImage:
 
         def display_ta():
             nonlocal offs
-            ta_uuid = self.inf[offs:offs + UUID_SIZE]
-            print(' struct shdr_bootstrap_ta')
-            print('  uuid:       {}'.format(uuid.UUID(bytes=ta_uuid)))
-            offs += UUID_SIZE
-            [ta_version] = struct.unpack('<I', self.inf[offs:offs + 4])
-            print('  ta_version: {}'.format(ta_version))
+            #ta_uuid = self.inf[offs:offs + UUID_SIZE]
+            #print(' struct shdr_bootstrap_ta')
+            #print('  uuid:       {}'.format(uuid.UUID(bytes=ta_uuid)))
+            #offs += UUID_SIZE
+            #[ta_version] = struct.unpack('<I', self.inf[offs:offs + 4])
+            #print('  ta_version: {}'.format(ta_version))
 
-            offs += 4
+            #offs += 4
             if img_type == SHDR_ENCRYPTED_TA:
                 ehdr = self.inf[offs: offs + EHDR_SIZE]
                 offs += EHDR_SIZE
@@ -783,9 +783,9 @@ class BinaryImage:
         if self.img_digest != self.__calc_digest():
             raise Exception('Hash digest does not match')
 
-    def verify_uuid(self, uuid):
-        if self.ta_uuid != uuid.bytes:
-            raise Exception('UUID does not match')
+    #def verify_uuid(self, uuid):
+    #    if self.ta_uuid != uuid.bytes:
+    #        raise Exception('UUID does not match')
 
     def add_subkey(self, subkey_file, name):
         sk_image = BinaryImage(subkey_file, None)
@@ -811,9 +811,9 @@ class BinaryImage:
             f.write(self.shdr)
             f.write(self.img_digest)
             f.write(self.sig)
-            if hasattr(self, 'ta_uuid'):
-                f.write(self.ta_uuid)
-                f.write(self.ta_version)
+            #if hasattr(self, 'ta_uuid'):
+            #    f.write(self.ta_uuid)
+            #    f.write(self.ta_version)
             if hasattr(self, 'ehdr'):
                 f.write(self.ehdr)
                 f.write(self.nonce)
@@ -916,7 +916,7 @@ def command_verify(args):
                 image.decrypt_ta(args.enc_key)
             image.verify_signature()
             image.verify_digest()
-            image.verify_uuid(args.uuid)
+            #image.verify_uuid(args.uuid)
             logger.info('Trusted application is correctly verified.')
             return
 

@@ -1,5 +1,5 @@
 # auto-generated TEE configuration file
-# TEE version 4.0.0-56-g6fb896e96
+# TEE version 4.0.0-65-gbf62d09
 set(CFG_8250_UART y)
 # CFG_AES_GCM_TABLE_BASED is not set 
 set(CFG_APB_TIMER y)
@@ -240,7 +240,7 @@ set(CFG_TEE_API_VERSION GPD-1.1-dev)
 # CFG_TEE_BENCHMARK is not set 
 set(CFG_TEE_CORE_DEBUG y)
 set(CFG_TEE_CORE_EMBED_INTERNAL_TESTS y)
-set(CFG_TEE_CORE_LOG_LEVEL 0)
+set(CFG_TEE_CORE_LOG_LEVEL 1)
 set(CFG_TEE_CORE_MALLOC_DEBUG y)
 set(CFG_TEE_CORE_NB_CORE 4)
 set(CFG_TEE_CORE_TA_TRACE y)
