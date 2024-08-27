@@ -1,5 +1,5 @@
 # auto-generated TEE configuration file
-# TEE version 4.0.0-65-gbf62d09
+# TEE version 4.0.0-72-gbaf4b28
 ARCH=arm
 PLATFORM=synaptics
 PLATFORM_FLAVOR=platypus

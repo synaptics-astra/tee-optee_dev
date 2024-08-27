@@ -1,5 +1,5 @@
 # auto-generated TEE configuration file
-# TEE version 4.0.0-65-gbf62d09
+# TEE version 4.0.0-72-gbaf4b28
 set(CFG_8250_UART y)
 # CFG_AES_GCM_TABLE_BASED is not set 
 set(CFG_APB_TIMER y)
