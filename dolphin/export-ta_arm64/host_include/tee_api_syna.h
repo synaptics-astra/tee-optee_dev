@@ -1,6 +1,6 @@
-/* SPDX-License-Identifier: BSD-2-Clause */
+// SPDX-License-Identifier: BSD-2-Clause
 /*
- * Copyright (c) 2014, STMicroelectronics International N.V.
+ * Copyright (c) 2024, Synaptics Incorporated.
  */
 
 /* Based on GP TEE Internal API Specification Version 1.1 */

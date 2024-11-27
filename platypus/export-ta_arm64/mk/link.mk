@@ -2,8 +2,6 @@ link-script$(sm) = $(ta-dev-kit-dir$(sm))/src/ta.ld.S
 link-script-pp$(sm) = $(link-out-dir$(sm))/ta.lds
 link-script-dep$(sm) = $(link-out-dir$(sm))/.ta.ld.d
 
-SYNA_PTA_SIGN_ENC ?= $(ta-dev-kit-dir$(sm))/pta_enc/pta_enc.sh
-SYNA_SIGN_ENC ?= $(ta-dev-kit-dir$(sm))/syna_ta_enc/ta_enc.sh
 SIGN_ENC ?= $(PYTHON3) $(ta-dev-kit-dir$(sm))/scripts/sign_encrypt.py
 TA_SIGN_KEY ?= $(ta-dev-kit-dir$(sm))/keys/default_ta.pem
 
@@ -119,11 +117,6 @@ $(link-out-dir$(sm))/$(user-ta-uuid).ta: \
 		$$(crypt-args$(user-ta-uuid)) \
 		--uuid $(user-ta-uuid) --ta-version $(user-ta-version) \
 		--in $$< --out $$@
-ifeq ($(CFG_SYNA_PTA),y)
-	$(q)$(SYNA_PTA_SIGN_ENC) $$@
-else
-	$(q)$(SYNA_SIGN_ENC) $$@
-endif
 endef
 
 $(eval $(call gen-link-t))

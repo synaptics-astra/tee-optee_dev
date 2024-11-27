@@ -3,8 +3,6 @@ $(error SHLIBUUID not set)
 endif
 link-out-dir = $(out-dir)
 
-SYNA_PTA_SIGN_ENC ?= $(ta-dev-kit-dir$(sm))/pta_enc/pta_enc.sh
-SYNA_SIGN_ENC ?= $(ta-dev-kit-dir$(sm))/syna_ta_enc/ta_enc.sh
 SIGN ?= $(TA_DEV_KIT_DIR)/scripts/sign_encrypt.py
 TA_SIGN_KEY ?= $(TA_DEV_KIT_DIR)/keys/default_ta.pem
 
@@ -54,8 +52,3 @@ $(link-out-dir)/$(shlibuuid).ta: $(link-out-dir)/$(shlibname).stripped.so \
 	@$(cmd-echo-silent) '  SIGN    $@'
 	$(q)$(PYTHON3) $(SIGN) --key $(TA_SIGN_KEY) $(TA_SUBKEY_ARGS) \
 		--uuid $(shlibuuid) --in $< --out $@
-ifeq ($(CFG_SYNA_PTA),y)
-	$(q)$(SYNA_PTA_SIGN_ENC) $@
-else
-	$(q)$(SYNA_SIGN_ENC) $@
-endif

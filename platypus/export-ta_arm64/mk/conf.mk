@@ -5,7 +5,6 @@ ta_arm64-platform-cppflags := -DARM64=1 -D__LP64__=1 -DMBEDTLS_SELF_TEST
 ta_arm64-platform-cflags := -Os -g3 -fpic -mstrict-align -fstack-protector-strong
 ta_arm64-platform-aflags := -pipe -g
 ta_arm64-platform-cxxflags := -fpic -Os -g3
-CFG_SYNA_TA := y
 CFG_TA_FLOAT_SUPPORT := y
 CFG_CACHE_API := y
 CFG_SECURE_DATA_PATH := y

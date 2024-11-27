@@ -1,25 +1,6 @@
+// SPDX-License-Identifier: BSD-2-Clause
 /*
- * Copyright (c) 2013-2014 Marvell International Ltd. and its affiliates.
- * All rights reserved.
- *
- * MARVELL CONFIDENTIAL
- *
- * The source code contained or described herein and all documents related to
- * the source code ("Material") are owned by Marvell International Ltd or its
- * suppliers or licensors. Title to the Material remains with Marvell
- * International Ltd or its suppliers and licensors. The Material contains
- * trade secrets and proprietary and confidential information of Marvell or
- * its suppliers and licensors.
- * The Material is protected by worldwide copyright and trade secret laws and
- * treaty provisions. No part of the Material may be used, copied, reproduced,
- * modified, published, uploaded, posted, transmitted, distributed, or
- * disclosed in any way without Marvell's prior express written permission.
- *
- * No license under any patent, copyright, trade secret or other intellectual
- * property right is granted to or conferred upon you by disclosure or delivery
- * of the Materials, either expressly, by implication, inducement, estoppel or
- * otherwise. Any license under such intellectual property rights must be
- * express and approved by Marvell in writing.
+ * Copyright (c) 2024, Synaptics Incorporated.
  */
 
 #ifndef __MEM_REGION_USERDATA_H__
@@ -63,12 +44,15 @@
 /* MACRO funtions for userdata processing */
 #define TEE_MR_USER(mr)                 (((mr)->userdata[0] & 0xFF000000))
 #define TEE_MR_USER_IS_TZCORE(mr)       (TEE_MR_USER(mr) == TEE_MR_USER_TZCORE)
+#define TEE_MR_USER_IS_HEAP(mr)         (TEE_MR_USER(mr) == TEE_MR_USER_TZCORE)
 #define TEE_MR_USER_IS_ZSP(mr)          (TEE_MR_USER(mr) == TEE_MR_USER_ZSP)
 #define TEE_MR_USER_IS_GPU(mr)          (TEE_MR_USER(mr) == TEE_MR_USER_GPU)
 #define TEE_MR_USER_IS_SI(mr)           (TEE_MR_USER(mr) == TEE_MR_USER_SI)
 #define TEE_MR_USER_IS_BL(mr)           (TEE_MR_USER(mr) == TEE_MR_USER_BL)
 #define TEE_MR_USER_IS_SYSTEM(mr)       (TEE_MR_USER(mr) == TEE_MR_USER_SYSTEM)
 #define TEE_MR_USER_IS_ION(mr)          (TEE_MR_USER(mr) == TEE_MR_USER_ION)
+#define TEE_MR_USER_IS_REGISTER(mr)     (TEE_MR_USER(mr) == TEE_MR_USER_REGISTER)
+#define TEE_MR_USER_IS_BCM(mr)          (TEE_MR_USER(mr) == TEE_MR_USER_BCM)
 #define TEE_MR_USER_IS_PT(mr)           (TEE_MR_USER(mr) == TEE_MR_USER_PT)
 
 /* MACRO functions for ION memory region userdata processing */
@@ -87,6 +71,7 @@
 #define TEE_MR_ION_FOR_GRAPHICS(mr)     (((mr)->userdata[1] & ION_A_CG))
 #define TEE_MR_ION_FOR_OTHER(mr)        (((mr)->userdata[1] & ION_A_CO))
 
+/* Memory zone setting master definition that used in userdata[3] */
 #define TEE_ZONE_ACPU  0x0
 #define TEE_ZONE_BCM   0x1
 #define TEE_ZONE_RSV   0x2

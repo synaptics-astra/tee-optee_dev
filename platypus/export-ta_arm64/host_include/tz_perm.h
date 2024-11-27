@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /*
- * Copyright (c) 2021, Synaptics Incorporated.
+ * Copyright (c) 2024, Synaptics Incorporated.
  */
 
 #ifndef _TZ_PERM_H_
