@@ -1,5 +1,5 @@
-#ifndef _out_arm_synaptics_myna2_release_dev_include_generated_conf_h_
-#define _out_arm_synaptics_myna2_release_dev_include_generated_conf_h_
+#ifndef _include_generated_conf_h_
+#define _include_generated_conf_h_
 #define CFG_8250_UART 1
 /* CFG_AES_GCM_TABLE_BASED is not set */
 #define CFG_APB_TIMER 1
@@ -8,10 +8,13 @@
 #define CFG_ARM64_ta_arm64 1
 /* CFG_ATTESTATION_PTA is not set */
 #define CFG_ATTESTATION_PTA_KEY_SIZE 3072
+/* CFG_AUTO_MAX_PA_BITS is not set */
 #define CFG_BCM 1
+#define CFG_BOOT_MEM 1
 /* CFG_BOOT_SECONDARY_REQUEST is not set */
 #define CFG_BUILD_IN_TREE_TA 1
 #define CFG_CACHE_API 1
+/* CFG_CALLOUT is not set */
 #define CFG_CC_OPT_LEVEL s
 #define CFG_COMPAT_GP10_DES 1
 #define CFG_CORE_ARM64_PA_BITS 32
@@ -42,7 +45,7 @@
 /* CFG_CORE_PAGE_TAG_AND_IV is not set */
 /* CFG_CORE_PAUTH is not set */
 #define CFG_CORE_PREALLOC_EL0_TBLS 1
-#define CFG_CORE_RESERVED_SHM 1
+/* CFG_CORE_RESERVED_SHM is not set */
 #define CFG_CORE_RODATA_NOEXEC 1
 #define CFG_CORE_RWDATA_NOEXEC 1
 /* CFG_CORE_SANITIZE_KADDRESS is not set */
@@ -54,6 +57,7 @@
 /* CFG_CORE_TPM_EVENT_LOG is not set */
 #define CFG_CORE_TZSRAM_EMUL_SIZE 458752
 #define CFG_CORE_UNMAP_CORE_AT_EL0 1
+/* CFG_CORE_UNSAFE_MODEXP is not set */
 /* CFG_CORE_WORKAROUND_ARM_NMFI is not set */
 #define CFG_CORE_WORKAROUND_NSITR_CACHE_PRIME 1
 #define CFG_CORE_WORKAROUND_SPECTRE_BP 1
@@ -117,15 +121,20 @@
 /* CFG_DRIVERS_CLK_DT is not set */
 /* CFG_DRIVERS_CLK_EARLY_PROBE is not set */
 /* CFG_DRIVERS_CLK_FIXED is not set */
+/* CFG_DRIVERS_CLK_PRINT_TREE is not set */
 /* CFG_DRIVERS_DT_RECURSIVE_PROBE is not set */
 /* CFG_DRIVERS_GPIO is not set */
 /* CFG_DRIVERS_I2C is not set */
+/* CFG_DRIVERS_NVMEM is not set */
 /* CFG_DRIVERS_PINCTRL is not set */
 /* CFG_DRIVERS_REGULATOR is not set */
+/* CFG_DRIVERS_REGULATOR_PRINT_TREE is not set */
+/* CFG_DRIVERS_REMOTEPROC is not set */
 /* CFG_DRIVERS_RSTCTRL is not set */
 /* CFG_DRIVERS_RTC is not set */
 /* CFG_DT is not set */
 #define CFG_DTB_MAX_SIZE 0x10000
+/* CFG_DT_CACHED_NODE_INFO is not set */
 /* CFG_DT_DRIVER_EMBEDDED_TEST is not set */
 /* CFG_EARLY_TA is not set */
 #define CFG_EARLY_TA_COMPRESS 1
@@ -137,17 +146,21 @@
 /* CFG_EXTERNAL_DT is not set */
 /* CFG_EXTERNAL_DTB_OVERLAY is not set */
 #define CFG_FAULT_MITIGATION 1
+/* CFG_FFA_CONSOLE is not set */
 /* CFG_FTRACE_SUPPORT is not set */
 /* CFG_GENERATE_DTB_OVERLAY is not set */
 #define CFG_GENERIC_BOOT 1
 #define CFG_GENX 1
 #define CFG_GIC 1
 #define CFG_GP_SOCKETS 1
+/* CFG_HALT_CORES_ON_PANIC is not set */
+#define CFG_HALT_CORES_ON_PANIC_SGI 15
 /* CFG_HMAC_64_1024_RANGE is not set */
 /* CFG_HWRNG_PTA is not set */
 #define CFG_HWSUPP_MEM_PERM_PXN 1
 #define CFG_HWSUPP_MEM_PERM_WXN 1
 #define CFG_HWSUPP_PMULT_64 1
+#define CFG_INSECURE 1
 #define CFG_KERN_LINKER_ARCH aarch64
 #define CFG_KERN_LINKER_FORMAT elf64-littleaarch64
 #define CFG_LIBUTILS_WITH_ISOC 1
@@ -161,17 +174,21 @@
 #define CFG_MMAP_REGIONS 13
 #define CFG_MSG_LONG_PREFIX_MASK 0x1a
 #define CFG_MZONE 1
+/* CFG_NOTIF_TEST_WD is not set */
 /* CFG_NS_VIRTUALIZATION is not set */
 #define CFG_NUM_THREADS 32
 /* CFG_OPTEE_REVISION_EXTRA is not set */
 #define CFG_OPTEE_REVISION_MAJOR 4
-#define CFG_OPTEE_REVISION_MINOR 0
+#define CFG_OPTEE_REVISION_MINOR 5
 #define CFG_OS_REV_REPORTS_GIT_SHA1 1
 /* CFG_PAGED_USER_TA is not set */
 /* CFG_PAN is not set */
+#define CFG_PGT_CACHE_ENTRIES (32 * 2)
 #define CFG_PKCS11_TA_ALLOW_DIGEST_KEY 1
 #define CFG_PKCS11_TA_AUTH_TEE_IDENTITY 1
+#define CFG_PKCS11_TA_CHECK_VALUE_ATTRIBUTE 1
 #define CFG_PKCS11_TA_HEAP_SIZE (32 * 1024)
+/* CFG_PKCS11_TA_RSA_X_509 is not set */
 #define CFG_PKCS11_TA_TOKEN_COUNT 3
 #define CFG_PREALLOC_RPC_CACHE 1
 #define CFG_REE_FS 1
@@ -180,8 +197,12 @@
 #define CFG_REE_FS_TA 1
 /* CFG_REE_FS_TA_BUFFERED is not set */
 /* CFG_REGULATOR_FIXED is not set */
+/* CFG_REGULATOR_GPIO is not set */
+/* CFG_REMOTEPROC_PTA is not set */
+#define CFG_REMOTEPROC_TA_HEAP_SIZE (4 * 1024)
 #define CFG_RESERVED_VASPACE_SIZE (1024 * 1024 * 10)
 #define CFG_RF 1
+#define CFG_RPMB_ANNOUNCE_PROBE_CAP 1
 /* CFG_RPMB_FS is not set */
 #define CFG_RPMB_FS_CACHE_ENTRIES 0
 /* CFG_RPMB_FS_DEBUG_DATA is not set */
@@ -190,6 +211,7 @@
 /* CFG_RPMB_RESET_FAT is not set */
 /* CFG_RPMB_TESTKEY is not set */
 /* CFG_RPMB_WRITE_KEY is not set */
+/* CFG_RSA_PUB_EXPONENT_3 is not set */
 /* CFG_RTC_PTA is not set */
 #define CFG_SCALL_SYNA 1
 /* CFG_SCMI_MSG_DRIVERS is not set */
@@ -202,8 +224,9 @@
 #define CFG_SECURE_DATA_PATH 1
 /* CFG_SECURE_PARTITION is not set */
 #define CFG_SECURE_TIME_SYNA 1
-#define CFG_SHMEM_SIZE 0x00300000
-#define CFG_SHMEM_START 0x03E00000
+/* CFG_SEMIHOSTING is not set */
+/* CFG_SEMIHOSTING_CONSOLE is not set */
+#define CFG_SEMIHOSTING_CONSOLE_FILE "optee.log"
 /* CFG_SHOW_CONF_ON_BOOT is not set */
 #define CFG_SM_NO_CYCLE_COUNTING 1
 /* CFG_SPMC_TESTS is not set */
@@ -226,6 +249,7 @@
 #define CFG_TA_MBEDTLS 1
 #define CFG_TA_MBEDTLS_MPI 1
 #define CFG_TA_MBEDTLS_SELF_TEST 1
+/* CFG_TA_MEBDTLS_UNSAFE_MODEXP is not set */
 /* CFG_TA_OPTEE_CORE_API_COMPAT_1_1 is not set */
 /* CFG_TA_PAUTH is not set */
 /* CFG_TA_STACK_PROTECTOR is not set */
@@ -245,41 +269,47 @@
 #define CFG_TEE_FW_MANUFACTURER FW_MAN_UNDEF
 #define CFG_TEE_IMPL_DESCR OPTEE
 #define CFG_TEE_MANUFACTURER LINARO
+#define CFG_TEE_SDP_MEM_BASE 0x03F00000
+#define CFG_TEE_SDP_MEM_SIZE 0x00100000
 #define CFG_TEE_TA_LOG_LEVEL 1
 /* CFG_TEE_TA_MALLOC_DEBUG is not set */
-#define CFG_TZDRAM_SIZE 0x03CA0000
+/* CFG_TRANSFER_LIST is not set */
+#define CFG_TZDRAM_SIZE 0x03DA0000
 #define CFG_TZDRAM_START 0x00160000
 /* CFG_ULIBS_MCOUNT is not set */
 /* CFG_ULIBS_SHARED is not set */
 #define CFG_UNWIND 1
+/* CFG_VERAISON_ATTESTATION_PTA is not set */
+#define CFG_VERAISON_ATTESTATION_PTA_TEST_KEY 1
 #define CFG_WARN_DECL_AFTER_STATEMENT 1
-#define CFG_WARN_INSECURE 1
 /* CFG_WDT is not set */
 /* CFG_WDT_SM_HANDLER is not set */
 #define CFG_WDT_SM_HANDLER_ID 0x82003D06
+/* CFG_WIDEVINE_HUK is not set */
+/* CFG_WIDEVINE_PTA is not set */
 #define CFG_WITH_ARM_TRUSTED_FW 1
 #define CFG_WITH_LPAE 1
 /* CFG_WITH_PAGER is not set */
 /* CFG_WITH_SOFTWARE_PRNG is not set */
 #define CFG_WITH_STACK_CANARIES 1
+/* CFG_WITH_STATS is not set */
 /* CFG_WITH_STMM_SP is not set */
 #define CFG_WITH_USER_TA 1
 #define CFG_WITH_VFP 1
 #define PLATFORM_FLAVOR myna2
 #define PLATFORM_FLAVOR_myna2 1
 #define PLATFORM_synaptics 1
+/* _CFG_CORE_ASYNC_NOTIF_DEFAULT_IMPL is not set */
 #define _CFG_CORE_LTC_ACIPHER 1
 #define _CFG_CORE_LTC_AES 1
 #define _CFG_CORE_LTC_AES_ACCEL 1
 #define _CFG_CORE_LTC_AES_DESC 1
 #define _CFG_CORE_LTC_ASN1 1
-#define _CFG_CORE_LTC_AUTHENC 1
 #define _CFG_CORE_LTC_BIGNUM_MAX_BITS 4096
 #define _CFG_CORE_LTC_CBC 1
 #define _CFG_CORE_LTC_CBC_MAC 1
 #define _CFG_CORE_LTC_CCM 1
 #define _CFG_CORE_LTC_CE 1
-#define _CFG_CORE_LTC_CIPHER 1
 #define _CFG_CORE_LTC_CMAC 1
 #define _CFG_CORE_LTC_CTR 1
 #define _CFG_CORE_LTC_CTS 1
@@ -293,7 +323,6 @@
 #define _CFG_CORE_LTC_HASH 1
 #define _CFG_CORE_LTC_HMAC 1
 /* _CFG_CORE_LTC_HWSUPP_PMULL is not set */
-#define _CFG_CORE_LTC_MAC 1
 #define _CFG_CORE_LTC_MD5 1
 #define _CFG_CORE_LTC_MD5_DESC 1
 #define _CFG_CORE_LTC_MPI 1

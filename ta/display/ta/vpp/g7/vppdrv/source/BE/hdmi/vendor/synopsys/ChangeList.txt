@@ -1,0 +1,16 @@
+#/* SPDX-License-Identifier: GPL-2.0 */
+#/* Copyright (C) 2025 Synaptics Incorporated */
+
+########## modifications done Synopsys API ##################
+
+Synopsys api version 2.13a (https://sc-debu-git.synaptics.com/gerrit/#/c/91010/)
+ 1. https://sc-debu-git.synaptics.com/gerrit/#/c/91031/    - added info frame control
+ 2. https://sc-debu-git.synaptics.com/gerrit/#/c/91040/    - modified i2s api name
+ 3. https://sc-debu-git.synaptics.com/gerrit/#/c/91229/    - ported from DIAG code
+ 4. https://sc-debu-git.synaptics.com/gerrit/#/c/91232/    - Added version header
+ 5. https://sc-debu-git.synaptics.com/gerrit/#/c/93543/    - Modify api to use function pointer
+ 6. https://sc-debu-git.synaptics.com/gerrit/#/c/92199/    - modified malloc and usleep
+
+Synopsys ESM software version 2.09a-ga00 (https://sc-debu-git.synaptics.com/gerrit/#/c/91025/)
+ 1. https://sc-debu-git.synaptics.com/gerrit/#/c/91037/    - Added hld driver
+ 2. https://sc-debu-git.synaptics.com/gerrit/#/c/91043/    - removed header from elliptic_common

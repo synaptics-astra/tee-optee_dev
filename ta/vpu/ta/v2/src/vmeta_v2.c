@@ -250,6 +250,7 @@ static int merge_header(struct i_vpu_ctx *ctx, uint32_t idx)
 
     memmove(dest, src, buf_desc->valid_data);
     memcpy(buf_desc->vaddr, ctx->header_mgr.header, ctx->header_mgr.header_len);
+    TEE_CleanCache((void *)buf_desc->vaddr, (size_t)buf_desc->size);
 
     buf_desc->valid_data += ctx->header_mgr.header_len;
 
@@ -2367,9 +2368,11 @@ bail:
     return TEE_SUCCESS;
 }
 
-static int venc_pop_ds_buf(struct i_vpu_ctx *ctx, uint32_t *idx)
+static int venc_pop_ds_buf(struct i_vpu_ctx *ctx, struct syna_vpu_ctrl *ctrl,
+                           uint32_t *idx)
 {
     struct venc_vid_buf_desc_t *buf_desc;
+    struct syna_vpu_tz_buf *buf;
     i_venc_pool_t *pool = (i_venc_pool_t *)ctx->desc_pool;
     int ret;
 
@@ -2382,6 +2385,11 @@ static int venc_pop_ds_buf(struct i_vpu_ctx *ctx, uint32_t *idx)
             ((void *)buf_desc) > (void *)&pool->ds_desc[MAX_SLOT - 1]) {
             ret = TEE_ERROR_ITEM_NOT_FOUND;
             return ret;
+        }
+        buf = &(ctrl->dsbufs[buf_desc->id]);
+        if (!(buf->planes[0].gfp_flags & BERLIN_GFP_FLAG_NO_CACHE_INVALIDATE)) {
+            TEE_InvalidateCache((void *)buf_desc->base_addr_virtual,
+                                (size_t)buf->planes[0].size);
         }
         *idx = buf_desc->id;
         VPU_BUF_TRACE("++++++++ pop ds %ld\n", *idx);
@@ -2455,7 +2463,7 @@ static int venc_pop_es_buf(struct i_vpu_ctx *ctx,
                 return TEE_ERROR_CANCEL;
             }
         } else if (ctx->header_mgr.got_header && ctx->merge_header) {
-            buf->flags |= BERLIN_BUF_FLAG_SEQ_HEADER;
+            buf->flags &= ~BERLIN_BUF_FLAG_SEQ_HEADER;
             merge_header(ctx, *idx);
         }
 
@@ -2534,7 +2542,7 @@ static TEE_Result ta_venc_pop_buf(VPU_SESSION_CTX *session_ctx,
         ret = venc_pop_ref_buf(ctx, &idx);
         break;
     case SYNA_VPU_FW_VENC_DS:
-        ret = venc_pop_ds_buf(ctx, &idx);
+        ret = venc_pop_ds_buf(ctx, ctrl, &idx);
         break;
 #if 0
     case 3:
@@ -2648,7 +2656,7 @@ static TEE_Result ta_venc_encode_stream(VPU_SESSION_CTX * session_ctx,
                        sizeof(venc_2ndpass_param_t));
             break;
         case VENC_EVENT_CHECK_DS_BUF:
-            ret = venc_pop_ds_buf(ctx, &idx);
+            ret = venc_pop_ds_buf(ctx, ctrl, &idx);
 
             if (TEE_ERROR_NO_DATA == ret) {
                 VMETA_LOGE("no ds buffer for popping.");

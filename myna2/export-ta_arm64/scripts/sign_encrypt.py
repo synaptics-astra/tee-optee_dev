@@ -19,7 +19,7 @@ enc_key_type = {'SHDR_ENC_KEY_DEV_SPECIFIC': 0x0,
 TEE_ATTR_RSA_MODULUS = 0xD0000130
 TEE_ATTR_RSA_PUBLIC_EXPONENT = 0xD0000230
 
-SHDR_BOOTSTRAP_TA = 0
+SHDR_BOOTSTRAP_TA = 1
 SHDR_ENCRYPTED_TA = 2
 SHDR_SUBKEY = 3
 SHDR_MAGIC = 0x4f545348
@@ -245,7 +245,7 @@ def get_args():
     arg_add_dig(parser_digest)
 
     parser_stitch = subparsers.add_parser(
-        'stitch', aliases=['stitch-ta'], prog=parser.prog + ' stich',
+        'stitch', aliases=['stitch-ta'], prog=parser.prog + ' stitch',
         help='Generate loadable signed and encrypted TA binary image file' +
         ' from TA raw image and its signature')
     parser_stitch.set_defaults(func=command_stitch)
@@ -266,6 +266,7 @@ def get_args():
     arg_add_uuid(parser_verify)
     arg_add_in(parser_verify)
     arg_add_key(parser_verify)
+    arg_add_enc_key(parser_verify)
 
     parser_display = subparsers.add_parser(
         'display', prog=parser.prog + ' display',
@@ -406,8 +407,8 @@ class BinaryImage:
                                 len(self.tag))
 
         self.__pack_img(SHDR_ENCRYPTED_TA, sig_algo)
-        #self.ta_uuid = uuid.bytes
-        #self.ta_version = struct.pack('<I', ta_version)
+        self.ta_uuid = uuid.bytes
+        self.ta_version = struct.pack('<I', ta_version)
         self.img_digest = self.__calc_digest()
 
     def set_bootstrap_ta(self, sig_algo, uuid, ta_version):
@@ -415,8 +416,8 @@ class BinaryImage:
 
         self.img = self.inf
         self.__pack_img(SHDR_BOOTSTRAP_TA, sig_algo)
-        #self.ta_uuid = uuid.bytes
-        #self.ta_version = struct.pack('<I', ta_version)
+        self.ta_uuid = uuid.bytes
+        self.ta_version = struct.pack('<I', ta_version)
         self.img_digest = self.__calc_digest()
 
     def set_subkey(self, sign_algo, name, uuid, subkey_version, max_depth,
@@ -496,18 +497,18 @@ class BinaryImage:
         offs += sig_size
 
         if img_type == SHDR_BOOTSTRAP_TA or img_type == SHDR_ENCRYPTED_TA:
-            #self.ta_uuid = self.inf[offs:offs + UUID_SIZE]
-            #offs += UUID_SIZE
-            #self.ta_version = self.inf[offs:offs + 4]
-            #offs += 4
+            self.ta_uuid = self.inf[offs:offs + UUID_SIZE]
+            offs += UUID_SIZE
+            self.ta_version = self.inf[offs:offs + 4]
+            offs += 4
             if img_type == SHDR_ENCRYPTED_TA:
                 self.ehdr = self.inf[offs: offs + EHDR_SIZE]
                 offs += EHDR_SIZE
                 [enc_algo, flags, nonce_len,
                  tag_len] = struct.unpack('<IIHH', self.ehdr)
-                if enc_value not in enc_tee_alg.values():
+                if enc_algo not in enc_tee_alg.values():
                     raise Exception('Unrecognized encrypt algorithm: 0x{:08x}'
-                                    .format(enc_value))
+                                    .format(enc_algo))
                 if nonce_len != 12:
                     raise Exception("Unexpected nonce len: {}"
                                     .format(nonce_len))
@@ -516,8 +517,10 @@ class BinaryImage:
 
                 if tag_len != 16:
                     raise Exception("Unexpected tag len: {}".format(tag_len))
-                self.tag = self.inf[-tag_len:]
-                self.ciphertext = self.inf[offs:-tag_len]
+                self.tag = self.inf[offs:offs + tag_len]
+                offs += tag_len
+
+                self.ciphertext = self.inf[offs:]
                 if len(self.ciphertext) != img_size:
                     raise Exception("Unexpected ciphertext size: ",
                                     "got {}, expected {}"
@@ -575,14 +578,14 @@ class BinaryImage:
 
         def display_ta():
             nonlocal offs
-            #ta_uuid = self.inf[offs:offs + UUID_SIZE]
-            #print(' struct shdr_bootstrap_ta')
-            #print('  uuid:       {}'.format(uuid.UUID(bytes=ta_uuid)))
-            #offs += UUID_SIZE
-            #[ta_version] = struct.unpack('<I', self.inf[offs:offs + 4])
-            #print('  ta_version: {}'.format(ta_version))
+            ta_uuid = self.inf[offs:offs + UUID_SIZE]
+            print(' struct shdr_bootstrap_ta')
+            print('  uuid:       {}'.format(uuid.UUID(bytes=ta_uuid)))
+            offs += UUID_SIZE
+            [ta_version] = struct.unpack('<I', self.inf[offs:offs + 4])
+            print('  ta_version: {}'.format(ta_version))
 
-            #offs += 4
+            offs += 4
             if img_type == SHDR_ENCRYPTED_TA:
                 ehdr = self.inf[offs: offs + EHDR_SIZE]
                 offs += EHDR_SIZE
@@ -598,7 +601,7 @@ class BinaryImage:
 
                 if enc_algo not in enc_tee_alg.values():
                     raise Exception('Unrecognized encrypt algorithm: 0x{:08x}'
-                                    .format(enc_value))
+                                    .format(enc_algo))
 
                 flags_name = 'Unkown'
                 if flags in enc_key_type.values():
@@ -617,10 +620,12 @@ class BinaryImage:
                 print('  tag_size:   {} (bytes)'.format(tag_len))
                 if tag_len != TAG_SIZE:
                     raise Exception("Unexpected tag len: {}".format(tag_len))
-                tag = self.inf[-tag_len:]
+                tag = self.inf[offs:offs+tag_len]
                 print('  tag:        {}'
                       .format(binascii.hexlify(tag).decode('ascii')))
-                ciphertext = self.inf[offs:-tag_len]
+                offs += tag_len
+
+                ciphertext = self.inf[offs:]
                 print(' TA offset:  {} (0x{:x}) bytes'.format(offs, offs))
                 print(' TA size:    {} (0x{:x}) bytes'
                       .format(len(ciphertext), len(ciphertext)))
@@ -628,7 +633,6 @@ class BinaryImage:
                     raise Exception("Unexpected ciphertext size: ",
                                     "got {}, expected {}"
                                     .format(len(ciphertext), img_size))
-                offs += tag_len
             else:
                 img = self.inf[offs:]
                 print(' TA offset:  {} (0x{:x}) bytes'.format(offs, offs))
@@ -717,11 +721,11 @@ class BinaryImage:
             else:
                 raise Exception("Unsupported image type: {}".format(img_type))
 
-    def decrypt_ta(enc_key):
+    def decrypt_ta(self, enc_key):
         from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
         cipher = AESGCM(bytes.fromhex(enc_key))
-        self.img = cipher.decrypt(self.nonce, self.ciphertext, None)
+        self.img = cipher.decrypt(self.nonce, self.ciphertext + self.tag, None)
 
     def __get_padding(self):
         from cryptography.hazmat.primitives.asymmetric import padding
@@ -783,9 +787,9 @@ class BinaryImage:
         if self.img_digest != self.__calc_digest():
             raise Exception('Hash digest does not match')
 
-    #def verify_uuid(self, uuid):
-    #    if self.ta_uuid != uuid.bytes:
-    #        raise Exception('UUID does not match')
+    def verify_uuid(self, uuid):
+        if self.ta_uuid != uuid.bytes:
+            raise Exception('UUID does not match')
 
     def add_subkey(self, subkey_file, name):
         sk_image = BinaryImage(subkey_file, None)
@@ -811,9 +815,9 @@ class BinaryImage:
             f.write(self.shdr)
             f.write(self.img_digest)
             f.write(self.sig)
-            #if hasattr(self, 'ta_uuid'):
-            #    f.write(self.ta_uuid)
-            #    f.write(self.ta_version)
+            if hasattr(self, 'ta_uuid'):
+                f.write(self.ta_uuid)
+                f.write(self.ta_version)
             if hasattr(self, 'ehdr'):
                 f.write(self.ehdr)
                 f.write(self.nonce)
@@ -911,12 +915,12 @@ def command_verify(args):
                                             next_uuid))
             if hasattr(image, 'ciphertext'):
                 if args.enc_key is None:
-                    logger.error('--enc_key needed to decrypt TA')
+                    logger.error('--enc-key needed to decrypt TA')
                     sys.exit(1)
                 image.decrypt_ta(args.enc_key)
             image.verify_signature()
             image.verify_digest()
-            #image.verify_uuid(args.uuid)
+            image.verify_uuid(args.uuid)
             logger.info('Trusted application is correctly verified.')
             return
 
