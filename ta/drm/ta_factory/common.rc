@@ -1,0 +1,34 @@
+dst_dir=${CONFIG_SYNA_SDK_OUT_TARGET_PATH}/ta/libfactory.ta/${syna_chip_name}/${syna_chip_rev}
+lib_dep_dir=${CONFIG_SYNA_SDK_OUT_TARGET_PATH}/${CONFIG_TA_STATIC_LIB_PATH}/${syna_chip_name}/${syna_chip_rev}
+lib_dep_inc_dir=${CONFIG_SYNA_SDK_OUT_TARGET_PATH}/${CONFIG_TA_STATIC_INC_PATH}/${syna_chip_name}/${syna_chip_rev}
+
+cflags=${CONFIG_TOOLCHAIN_TA_CFLAG}
+ldflags=${CONFIG_TOOLCHAIN_TA_LDFLAG}
+
+if [ "${CONFIG_TEE_OPENSSL_VERSION}" = "1_1_1q" ]; then
+    cflags="${cflags} -DOPENSSL_111Q"
+fi
+
+if [ "${syna_chip_name}" = "dolphin" ]; then
+  chip_name_rev="vs680${syna_chip_rev}"
+elif [ "${syna_chip_name}" = "platypus" ]; then
+  chip_name_rev="vs640${syna_chip_rev}"
+elif [ "${syna_chip_name}" = "myna2" ]; then
+  chip_name_rev="dvf120${syna_chip_rev}"
+else
+  chip_name_rev="${syna_chip_name}${syna_chip_rev}"
+fi
+
+if [ "is${CONFIG_TZK}" = "isy" ]; then
+  cflags="${cflags} -DCONFIG_TZK"
+fi
+
+make all -j ${CONFIG_CPU_NUMBER} \
+    -C ${mod_dir} TA_CROSS_COMPILE="${CONFIG_TOOLCHAIN_TA}" \
+    E_CFLAGS="${cflags}" E_LDFLAGS="${ldflags}" \
+    E_OBJ="${CONFIG_TOOLCHAIN_TA_OBJ_FILES}" \
+    BUILD_DIR="${build_dir}" LIB_DEPT_DIR="${lib_dep_dir}" \
+    LIB_HEADER_INC_DIR="${lib_dep_inc_dir}" \
+    CHIP_FULL_NAME="${chip_name_rev}"
+
+make install -C ${mod_dir} TA_REL_DIR="${dst_dir}" BUILD_DIR="${build_dir}"

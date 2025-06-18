@@ -1,0 +1,422 @@
+// SPDX-License-Identifier: GPL-2.0
+/* Copyright (C) 2025 Synopsys, Inc. */
+/* Copyright (C) 2025 Synaptics Incorporated */
+
+#include "phy_reg.h"
+#include "phy_302.h"
+#include "phy_jtag.h"
+#include "general_ops.h"
+
+
+#define OPMODE_PLLCFG 0x06 //Mode of Operation and PLL  Dividers Control Register
+#define CKSYMTXCTRL   0x09 //Clock Symbol and Transmitter Control Register
+#define PLLCURRCTRL   0x10 //PLL Current Control Register
+#define VLEVCTRL      0x0E //Voltage Level Control Register
+#define PLLGMPCTRL    0x15 //PLL Gmp Control Register
+#define TXTERM        0x19 //Transmission Termination Register
+
+#define LT_1_65GBPS_TXTERM 		0x0004
+#define LT_1_65GBPS_VLEVCTRL 	0x01E0
+#define LT_1_65GBPS_CKSYMTXCTRL 0x80C8
+
+#define LT_3_40GBPS_TXTERM 		0x0004
+#define LT_3_40GBPS_VLEVCTRL 	0x0180
+#define LT_3_40GBPS_CKSYMTXCTRL 0x83C8
+
+#define GT_3_40GBPS_TXTERM 		0x0000
+#define GT_3_40GBPS_VLEVCTRL 	0x0120
+#define GT_3_40GBPS_CKSYMTXCTRL 0x80F5
+
+#define LT_1_65GBPS LT_1_65GBPS_TXTERM, LT_1_65GBPS_VLEVCTRL, LT_1_65GBPS_CKSYMTXCTRL
+#define LT_3_40GBPS LT_3_40GBPS_TXTERM, LT_3_40GBPS_VLEVCTRL, LT_3_40GBPS_CKSYMTXCTRL
+#define GT_3_40GBPS GT_3_40GBPS_TXTERM, GT_3_40GBPS_VLEVCTRL, GT_3_40GBPS_CKSYMTXCTRL
+
+static struct phy_config phy302[] = {
+	{13.5, 1, 8, HDMI_14, 0x0133, 0x0018, 0x0000, LT_1_65GBPS},
+	{13.5, 1, 10, HDMI_14, 0x2173, 0x0018, 0x0000, LT_1_65GBPS},
+	{13.5, 1, 12, HDMI_14, 0x41B3, 0x0018, 0x0000, LT_1_65GBPS},
+	{13.5, 1, 16, HDMI_14, 0x6132, 0x0028, 0x0001, LT_1_65GBPS},
+	{13.5, 3, 8, HDMI_14, 0x0132, 0x0028, 0x0001, LT_1_65GBPS},
+	{13.5, 3, 10, HDMI_14, 0x2172, 0x0028, 0x0001, LT_1_65GBPS},
+	{13.5, 3, 12, HDMI_14, 0x41B2, 0x0028, 0x0001, LT_1_65GBPS},
+	{13.5, 3, 16, HDMI_14, 0x6131, 0x0038, 0x0002, LT_1_65GBPS},
+	{13.5, 7, 8, HDMI_14, 0x0131, 0x0038, 0x0002, LT_1_65GBPS},
+	{13.5, 7, 10, HDMI_14, 0x2171, 0x0038, 0x0002, LT_1_65GBPS},
+	{13.5, 7, 12, HDMI_14, 0x41B1, 0x0038, 0x0002, LT_1_65GBPS},
+	{13.5, 7, 16, HDMI_14, 0x6130, 0x0038, 0x0003, LT_3_40GBPS},
+	{18, 2, 8, HDMI_14, 0x00F2, 0x0028, 0x0001, LT_1_65GBPS},
+	{18, 2, 10, HDMI_14, 0x2162, 0x0028, 0x0001, LT_1_65GBPS},
+	{18, 2, 12, HDMI_14, 0x41A2, 0x0028, 0x0001, LT_1_65GBPS},
+	{18, 2, 16, HDMI_14, 0x60F1, 0x0038, 0x0002, LT_1_65GBPS},
+	{18, 5, 8, HDMI_14, 0x00F1, 0x0038, 0x0002, LT_1_65GBPS},
+	{18, 5, 10, HDMI_14, 0x2161, 0x0038, 0x0002, LT_1_65GBPS},
+	{18, 5, 12, HDMI_14, 0x41A1, 0x0038, 0x0002, LT_1_65GBPS},
+	{18, 5, 16, HDMI_14, 0x60F0, 0x0038, 0x0003, LT_3_40GBPS},
+	{21.6, 4, 8, HDMI_14, 0x0151, 0x0038, 0x0002, LT_1_65GBPS},
+	{21.6, 4, 12, HDMI_14, 0x4161, 0x0038, 0x0002, LT_1_65GBPS},
+	{21.6, 4, 16, HDMI_14, 0x6150, 0x0038, 0x0003, LT_3_40GBPS},
+	{21.6, 9, 8, HDMI_14, 0x0150, 0x0038, 0x0003, LT_3_40GBPS},
+	{21.6, 9, 12, HDMI_14, 0x4160, 0x0038, 0x0003, LT_3_40GBPS},
+	{21.6, 9, 16, HDMI_20, 0x7B70, 0x0038, 0x0003, GT_3_40GBPS},
+	{24, 8, 8, HDMI_14, 0x00E0, 0x0038, 0x0003, LT_3_40GBPS},
+	{24, 8, 16, HDMI_20, 0x7BA0, 0x0038, 0x0003, GT_3_40GBPS},
+	{25.175, 0, 8, HDMI_14, 0x00B3, 0x0018, 0x0000, LT_1_65GBPS},
+	{25.175, 0, 10, HDMI_14, 0x2153, 0x0018, 0x0000, LT_1_65GBPS},
+	{25.175, 0, 12, HDMI_14, 0x40F3, 0x0018, 0x0000, LT_1_65GBPS},
+	{25.175, 0, 16, HDMI_14, 0x60B2, 0x0028, 0x0001, LT_1_65GBPS},
+	{27, 0, 8, HDMI_14, 0x00B3, 0x0018, 0x0000, LT_1_65GBPS},
+	{27, 0, 10, HDMI_14, 0x2153, 0x0018, 0x0000, LT_1_65GBPS},
+	{27, 0, 12, HDMI_14, 0x40F3, 0x0018, 0x0000, LT_1_65GBPS},
+	{27, 0, 16, HDMI_14, 0x60B2, 0x0028, 0x0001, LT_1_65GBPS},
+	{27, 1, 8, HDMI_14, 0x00B2, 0x0028, 0x0001, LT_1_65GBPS},
+	{27, 1, 10, HDMI_14, 0x2152, 0x0028, 0x0001, LT_1_65GBPS},
+	{27, 1, 12, HDMI_14, 0x40F2, 0x0028, 0x0001, LT_1_65GBPS},
+	{27, 1, 16, HDMI_14, 0x60B1, 0x0038, 0x0002, LT_1_65GBPS},
+	{27, 3, 8, HDMI_14, 0x00B1, 0x0038, 0x0002, LT_1_65GBPS},
+	{27, 3, 10, HDMI_14, 0x2151, 0x0038, 0x0002, LT_1_65GBPS},
+	{27, 3, 12, HDMI_14, 0x40F1, 0x0038, 0x0002, LT_1_65GBPS},
+	{27, 3, 16, HDMI_14, 0x60B0, 0x0038, 0x0003, LT_3_40GBPS},
+	{27, 7, 8, HDMI_14, 0x00B0, 0x0038, 0x0003, LT_3_40GBPS},
+	{27, 7, 10, HDMI_14, 0x2150, 0x0038, 0x0003, LT_3_40GBPS},
+	{27, 7, 12, HDMI_14, 0x40F0, 0x0038, 0x0003, LT_3_40GBPS},
+	{27, 7, 16, HDMI_20, 0x7B30, 0x0038, 0x0003, GT_3_40GBPS},
+	{31.5, 0, 8, HDMI_14, 0x00B3, 0x0018, 0x0000, LT_1_65GBPS},
+	{33.75, 0, 8, HDMI_14, 0x00B3, 0x0018, 0x0000, LT_1_65GBPS},
+	{35.5, 0, 8, HDMI_14, 0x00B3, 0x0018, 0x0000, LT_1_65GBPS},
+	{36, 0, 8, HDMI_14, 0x00B3, 0x0018, 0x0000, LT_1_65GBPS},
+	{36, 2, 8, HDMI_14, 0x00A1, 0x0038, 0x0002, LT_1_65GBPS},
+	{36, 2, 10, HDMI_14, 0x2165, 0x0038, 0x0002, LT_1_65GBPS},
+	{36, 2, 12, HDMI_14, 0x40E1, 0x0038, 0x0002, LT_1_65GBPS},
+	{36, 2, 16, HDMI_14, 0x60A0, 0x0038, 0x0003, LT_3_40GBPS},
+	{36, 5, 8, HDMI_14, 0x00A0, 0x0038, 0x0003, LT_3_40GBPS},
+	{36, 5, 10, HDMI_14, 0x2164, 0x0038, 0x0003, LT_3_40GBPS},
+	{36, 5, 12, HDMI_14, 0x40E0, 0x0038, 0x0003, LT_3_40GBPS},
+	{36, 5, 16, HDMI_20, 0x7AF0, 0x0038, 0x0003, GT_3_40GBPS},
+	{40, 0, 8, HDMI_14, 0x00B3, 0x0018, 0x0000, LT_1_65GBPS},
+	{43.2, 4, 8, HDMI_14, 0x0140, 0x0038, 0x0003, LT_3_40GBPS},
+	{43.2, 4, 12, HDMI_14, 0x4164, 0x0038, 0x0003, LT_3_40GBPS},
+	{43.2, 4, 16, HDMI_20, 0x7B50, 0x0038, 0x0003, GT_3_40GBPS},
+	{44.9, 0, 8, HDMI_14, 0x00B3, 0x0018, 0x0000, LT_1_65GBPS},
+	{49.5, 0, 8, HDMI_14, 0x0072, 0x0028, 0x0001, LT_1_65GBPS},
+	{50, 0, 8, HDMI_14, 0x0072, 0x0028, 0x0001, LT_1_65GBPS},
+	{50.35, 0, 8, HDMI_14, 0x0072, 0x0028, 0x0001, LT_1_65GBPS},
+	{50.35, 0, 10, HDMI_14, 0x2142, 0x0028, 0x0001, LT_1_65GBPS},
+	{50.35, 0, 12, HDMI_14, 0x40A2, 0x0028, 0x0001, LT_1_65GBPS},
+	{50.35, 0, 16, HDMI_14, 0x6071, 0x0038, 0x0002, LT_1_65GBPS},
+	{54, 0, 8, HDMI_14, 0x0072, 0x0028, 0x0001, LT_1_65GBPS},
+	{54, 0, 10, HDMI_14, 0x2142, 0x0028, 0x0001, LT_1_65GBPS},
+	{54, 0, 12, HDMI_14, 0x40A2, 0x0028, 0x0001, LT_1_65GBPS},
+	{54, 0, 16, HDMI_14, 0x6071, 0x0038, 0x0002, LT_1_65GBPS},
+	{54, 1, 8, HDMI_14, 0x0071, 0x0038, 0x0002, LT_1_65GBPS},
+	{54, 1, 10, HDMI_14, 0x2141, 0x0038, 0x0002, LT_1_65GBPS},
+	{54, 1, 12, HDMI_14, 0x40A1, 0x0038, 0x0002, LT_1_65GBPS},
+	{54, 1, 16, HDMI_14, 0x6070, 0x0038, 0x0003, LT_3_40GBPS},
+	{54, 3, 8, HDMI_14, 0x0070, 0x0038, 0x0003, LT_3_40GBPS},
+	{54, 3, 10, HDMI_14, 0x2140, 0x0038, 0x0003, LT_3_40GBPS},
+	{54, 3, 12, HDMI_14, 0x40A0, 0x0038, 0x0003, LT_3_40GBPS},
+	{54, 3, 16, HDMI_20, 0x7AB0, 0x0038, 0x0003, GT_3_40GBPS},
+	{56.25, 0, 8, HDMI_14, 0x0072, 0x0028, 0x0001, LT_1_65GBPS},
+	{59.4, 0, 8, HDMI_14, 0x0072, 0x0028, 0x0001, LT_1_65GBPS},
+	{59.4, 0, 10, HDMI_14, 0x2142, 0x0028, 0x0001, LT_1_65GBPS},
+	{59.4, 0, 12, HDMI_14, 0x40A2, 0x0028, 0x0001, LT_1_65GBPS},
+	{59.4, 0, 16, HDMI_14, 0x6071, 0x0038, 0x0002, LT_1_65GBPS},
+	{65, 0, 8, HDMI_14, 0x0072, 0x0028, 0x0001, LT_1_65GBPS},
+	{68.25, 0, 8, HDMI_14, 0x0072, 0x0028, 0x0001, LT_1_65GBPS},
+	{71, 0, 8, HDMI_14, 0x0072, 0x0028, 0x0001, LT_1_65GBPS},
+	{72, 0, 8, HDMI_14, 0x0072, 0x0028, 0x0001, LT_1_65GBPS},
+	{72, 0, 10, HDMI_14, 0x2142, 0x0028, 0x0001, LT_1_65GBPS},
+	{72, 0, 12, HDMI_14, 0x4061, 0x0038, 0x0002, LT_1_65GBPS},
+	{72, 0, 16, HDMI_14, 0x6071, 0x0038, 0x0002, LT_1_65GBPS},
+	{72, 2, 8, HDMI_14, 0x0060, 0x0038, 0x0003, LT_3_40GBPS},
+	{72, 2, 10, HDMI_14, 0x216C, 0x0038, 0x0003, LT_3_40GBPS},
+	{72, 2, 12, HDMI_14, 0x40E4, 0x0038, 0x0003, LT_3_40GBPS},
+	{72, 2, 16, HDMI_20, 0x7AA0, 0x0038, 0x0003, GT_3_40GBPS},
+	{73.25, 0, 8, HDMI_14, 0x0072, 0x0028, 0x0001, LT_1_65GBPS},
+	{74.25, 0, 8, HDMI_14, 0x0072, 0x0028, 0x0001, LT_1_65GBPS},
+	{74.25, 0, 10, HDMI_14, 0x2145, 0x0038, 0x0002, LT_1_65GBPS},
+	{74.25, 0, 12, HDMI_14, 0x4061, 0x0038, 0x0002, LT_1_65GBPS},
+	{74.25, 0, 16, HDMI_14, 0x6071, 0x0038, 0x0002, LT_1_65GBPS},
+	{75, 0, 8, HDMI_14, 0x0072, 0x0028, 0x0001, LT_1_65GBPS},
+	{78.75, 0, 8, HDMI_14, 0x0072, 0x0028, 0x0001, LT_1_65GBPS},
+	{79.5, 0, 8, HDMI_14, 0x0072, 0x0028, 0x0001, LT_1_65GBPS},
+	{82.5, 0, 8, HDMI_14, 0x0072, 0x0028, 0x0001, LT_1_65GBPS},
+	{82.5, 0, 10, HDMI_14, 0x2145, 0x0038, 0x0002, LT_1_65GBPS},
+	{82.5, 0, 12, HDMI_14, 0x4061, 0x0038, 0x0002, LT_1_65GBPS},
+	{82.5, 0, 16, HDMI_14, 0x6071, 0x0038, 0x0002, LT_1_65GBPS},
+	{83.5, 0, 8, HDMI_14, 0x0072, 0x0028, 0x0001, LT_1_65GBPS},
+	{85.5, 0, 8, HDMI_14, 0x0072, 0x0028, 0x0001, LT_1_65GBPS},
+	{88.75, 0, 8, HDMI_14, 0x0072, 0x0028, 0x0001, LT_1_65GBPS},
+	{90, 0, 8, HDMI_14, 0x0072, 0x0028, 0x0001, LT_1_65GBPS},
+	{90, 0, 10, HDMI_14, 0x2145, 0x0038, 0x0002, LT_1_65GBPS},
+	{90, 0, 12, HDMI_14, 0x4061, 0x0038, 0x0002, LT_1_65GBPS},
+	{90, 0, 16, HDMI_14, 0x6071, 0x0038, 0x0002, LT_3_40GBPS},
+	{94.5, 0, 8, HDMI_14, 0x0051, 0x0038, 0x0002, LT_1_65GBPS},
+	{99, 0, 8, HDMI_14, 0x0051, 0x0038, 0x0002, LT_1_65GBPS},
+	{99, 0, 10, HDMI_14, 0x2145, 0x0038, 0x0002, LT_1_65GBPS},
+	{99, 0, 12, HDMI_14, 0x4061, 0x0038, 0x0002, LT_1_65GBPS},
+	{99, 0, 16, HDMI_14, 0x6050, 0x0038, 0x0003, LT_3_40GBPS},
+	{100.7, 0, 8, HDMI_14, 0x0051, 0x0038, 0x0002, LT_1_65GBPS},
+	{100.7, 0, 10, HDMI_14, 0x2145, 0x0038, 0x0002, LT_1_65GBPS},
+	{100.7, 0, 12, HDMI_14, 0x4061, 0x0038, 0x0002, LT_1_65GBPS},
+	{100.7, 0, 16, HDMI_14, 0x6050, 0x0038, 0x0003, LT_3_40GBPS},
+	{101, 0, 8, HDMI_14, 0x0051, 0x0038, 0x0002, LT_1_65GBPS},
+	{102.25, 0, 8, HDMI_14, 0x0051, 0x0038, 0x0002, LT_1_65GBPS},
+	{106.5, 0, 8, HDMI_14, 0x0051, 0x0038, 0x0002, LT_1_65GBPS},
+	{108, 0, 8, HDMI_14, 0x0051, 0x0038, 0x0002, LT_1_65GBPS},
+	{108, 0, 10, HDMI_14, 0x2145, 0x0038, 0x0002, LT_1_65GBPS},
+	{108, 0, 12, HDMI_14, 0x4061, 0x0038, 0x0002, LT_1_65GBPS},
+	{108, 0, 16, HDMI_14, 0x6050, 0x0038, 0x0003, LT_3_40GBPS},
+	{108, 1, 8, HDMI_14, 0x0050, 0x0038, 0x0003, LT_3_40GBPS},
+	{108, 1, 10, HDMI_14, 0x2144, 0x0038, 0x0003, LT_3_40GBPS},
+	{108, 1, 12, HDMI_14, 0x4060, 0x0038, 0x0003, LT_3_40GBPS},
+	{108, 1, 16, HDMI_20, 0x7A70, 0x0038, 0x0003, GT_3_40GBPS},
+	{115.5, 0, 8, HDMI_14, 0x0051, 0x0038, 0x0002, LT_1_65GBPS},
+	{117.5, 0, 8, HDMI_14, 0x0051, 0x0038, 0x0002, LT_1_65GBPS},
+	{118.8, 0, 8, HDMI_14, 0x0051, 0x0038, 0x0002, LT_1_65GBPS},
+	{118.8, 0, 10, HDMI_14, 0x2145, 0x0038, 0x0002, LT_1_65GBPS},
+	{118.8, 0, 12, HDMI_14, 0x4061, 0x0038, 0x0002, LT_3_40GBPS},
+	{118.8, 0, 16, HDMI_14, 0x6050, 0x0038, 0x0003, LT_3_40GBPS},
+	{119, 0, 8, HDMI_14, 0x0051, 0x0038, 0x0002, LT_1_65GBPS},
+	{121.75, 0, 8, HDMI_14, 0x0051, 0x0038, 0x0002, LT_1_65GBPS},
+	{122.5, 0, 8, HDMI_14, 0x0051, 0x0038, 0x0002, LT_1_65GBPS},
+	{135, 0, 8, HDMI_14, 0x0051, 0x0038, 0x0002, LT_1_65GBPS},
+	{136.75, 0, 8, HDMI_14, 0x0051, 0x0038, 0x0002, LT_1_65GBPS},
+	{140.25, 0, 8, HDMI_14, 0x0051, 0x0038, 0x0002, LT_1_65GBPS},
+	{144, 0, 8, HDMI_14, 0x0051, 0x0038, 0x0002, LT_1_65GBPS},
+	{144, 0, 10, HDMI_14, 0x2145, 0x0038, 0x0002, LT_3_40GBPS},
+	{144, 0, 12, HDMI_14, 0x4064, 0x0038, 0x0003, LT_3_40GBPS},
+	{144, 0, 16, HDMI_14, 0x6050, 0x0038, 0x0003, LT_3_40GBPS},
+	{146.25, 0, 8, HDMI_14, 0x0051, 0x0038, 0x0002, LT_1_65GBPS},
+	{148.25, 0, 8, HDMI_14, 0x0051, 0x0038, 0x0002, LT_1_65GBPS},
+	{148.5, 0, 8, HDMI_14, 0x0051, 0x0038, 0x0002, LT_1_65GBPS},
+	{148.5, 0, 10, HDMI_14, 0x214C, 0x0038, 0x0003, LT_3_40GBPS},
+	{148.5, 0, 12, HDMI_14, 0x4064, 0x0038, 0x0003, LT_3_40GBPS},
+	{148.5, 0, 16, HDMI_14, 0x6050, 0x0038, 0x0003, LT_3_40GBPS},
+	{154, 0, 8, HDMI_14, 0x0051, 0x0038, 0x0002, LT_1_65GBPS},
+	{156, 0, 8, HDMI_14, 0x0051, 0x0038, 0x0002, LT_1_65GBPS},
+	{157, 0, 8, HDMI_14, 0x0051, 0x0038, 0x0002, LT_1_65GBPS},
+	{157.5, 0, 8, HDMI_14, 0x0051, 0x0038, 0x0002, LT_1_65GBPS},
+	{162, 0, 8, HDMI_14, 0x0051, 0x0038, 0x0002, LT_1_65GBPS},
+	{165, 0, 8, HDMI_14, 0x0051, 0x0038, 0x0002, LT_1_65GBPS},
+	{165, 0, 10, HDMI_14, 0x214C, 0x0038, 0x0003, LT_3_40GBPS},
+	{165, 0, 12, HDMI_14, 0x4064, 0x0038, 0x0003, LT_3_40GBPS},
+	{165, 0, 16, HDMI_14, 0x6050, 0x0038, 0x0003, LT_3_40GBPS},
+	{175.5, 0, 8, HDMI_14, 0x0051, 0x0038, 0x0002, LT_3_40GBPS},
+	{179.5, 0, 8, HDMI_14, 0x0051, 0x0038, 0x0002, LT_3_40GBPS},
+	{180, 0, 8, HDMI_14, 0x0051, 0x0038, 0x0002, LT_3_40GBPS},
+	{180, 0, 10, HDMI_14, 0x214C, 0x0038, 0x0003, LT_3_40GBPS},
+	{180, 0, 12, HDMI_14, 0x4064, 0x0038, 0x0003, LT_3_40GBPS},
+	{180, 0, 16, HDMI_20, 0x7A50, 0x0038, 0x0003, GT_3_40GBPS},
+	{182.75, 0, 8, HDMI_14, 0x0051, 0x0038, 0x0002, LT_3_40GBPS},
+	{185.625, 0, 8, HDMI_14, 0x0040, 0x0038, 0x0003, LT_3_40GBPS},
+	{185.625, 0, 10, HDMI_14, 0x214C, 0x0038, 0x0003, LT_3_40GBPS},
+	{185.625, 0, 12, HDMI_14, 0x4064, 0x0038, 0x0003, LT_3_40GBPS},
+	{185.625, 0, 16, HDMI_20, 0x7A50, 0x0038, 0x0003, GT_3_40GBPS},
+	{187, 0, 8, HDMI_14, 0x0040, 0x0038, 0x0003, LT_3_40GBPS},
+	{187.25, 0, 8, HDMI_14, 0x0040, 0x0038, 0x0003, LT_3_40GBPS},
+	{189, 0, 8, HDMI_14, 0x0040, 0x0038, 0x0003, LT_3_40GBPS},
+	{193.25, 0, 8, HDMI_14, 0x0040, 0x0038, 0x0003, LT_3_40GBPS},
+	{198, 0, 8, HDMI_14, 0x0040, 0x0038, 0x0003, LT_3_40GBPS},
+	{198, 0, 10, HDMI_14, 0x214C, 0x0038, 0x0003, LT_3_40GBPS},
+	{198, 0, 12, HDMI_14, 0x4064, 0x0038, 0x0003, LT_3_40GBPS},
+	{198, 0, 16, HDMI_20, 0x7A50, 0x0038, 0x0003, GT_3_40GBPS},
+	{202.5, 0, 8, HDMI_14, 0x0040, 0x0038, 0x0003, LT_3_40GBPS},
+	{204.75, 0, 8, HDMI_14, 0x0040, 0x0038, 0x0003, LT_3_40GBPS},
+	{208, 0, 8, HDMI_14, 0x0040, 0x0038, 0x0003, LT_3_40GBPS},
+	{214.75, 0, 8, HDMI_14, 0x0040, 0x0038, 0x0003, LT_3_40GBPS},
+	{216, 0, 8, HDMI_14, 0x0040, 0x0038, 0x0003, LT_3_40GBPS},
+	{216, 0, 10, HDMI_14, 0x214C, 0x0038, 0x0003, LT_3_40GBPS},
+	{216, 0, 12, HDMI_14, 0x4064, 0x0038, 0x0003, LT_3_40GBPS},
+	{216, 0, 16, HDMI_20, 0x7A50, 0x0038, 0x0003, GT_3_40GBPS},
+	{218.25, 0, 8, HDMI_14, 0x0040, 0x0038, 0x0003, LT_3_40GBPS},
+	{229.5, 0, 8, HDMI_14, 0x0040, 0x0038, 0x0003, LT_3_40GBPS},
+	{234, 0, 8, HDMI_14, 0x0040, 0x0038, 0x0003, LT_3_40GBPS},
+	{237.6, 0, 8, HDMI_14, 0x0040, 0x0038, 0x0003, LT_3_40GBPS},
+	{237.6, 0, 10, HDMI_14, 0x214C, 0x0038, 0x0003, LT_3_40GBPS},
+	{237.6, 0, 12, HDMI_20, 0x5A64, 0x0038, 0x0003, GT_3_40GBPS},
+	{237.6, 0, 16, HDMI_20, 0x7A50, 0x0038, 0x0003, GT_3_40GBPS},
+	{245.25, 0, 8, HDMI_14, 0x0040, 0x0038, 0x0003, LT_3_40GBPS},
+	{245.5, 0, 8, HDMI_14, 0x0040, 0x0038, 0x0003, LT_3_40GBPS},
+	{261, 0, 8, HDMI_14, 0x0040, 0x0038, 0x0003, LT_3_40GBPS},
+	{268.25, 0, 8, HDMI_14, 0x0040, 0x0038, 0x0003, LT_3_40GBPS},
+	{268.5, 0, 8, HDMI_14, 0x0040, 0x0038, 0x0003, LT_3_40GBPS},
+	{281.25, 0, 8, HDMI_14, 0x0040, 0x0038, 0x0003, LT_3_40GBPS},
+	{288, 0, 8, HDMI_14, 0x0040, 0x0038, 0x0003, LT_3_40GBPS},
+	{288, 0, 10, HDMI_20, 0x3B4C, 0x0038, 0x0003, GT_3_40GBPS},
+	{288, 0, 12, HDMI_20, 0x5A64, 0x0038, 0x0003, GT_3_40GBPS},
+	{288, 0, 16, HDMI_20, 0x7A50, 0x0028, 0x0003, GT_3_40GBPS},
+	{297, 0, 8, HDMI_14, 0x0040, 0x0038, 0x0003, LT_3_40GBPS},
+	{297, 0, 10, HDMI_20, 0x3B4C, 0x0038, 0x0003, GT_3_40GBPS},
+	{297, 0, 12, HDMI_20, 0x5A64, 0x0038, 0x0003, GT_3_40GBPS},
+	{297, 0, 16, HDMI_20, 0x7A50, 0x0028, 0x0003, GT_3_40GBPS},
+	{317, 0, 8, HDMI_14, 0x0040, 0x0038, 0x0003, LT_3_40GBPS},
+	{330, 0, 8, HDMI_14, 0x0040, 0x0038, 0x0003, LT_3_40GBPS},
+	{330, 0, 10, HDMI_20, 0x3B4C, 0x0038, 0x0003, GT_3_40GBPS},
+	{330, 0, 12, HDMI_20, 0x5A64, 0x0038, 0x0003, GT_3_40GBPS},
+	{333.25, 0, 8, HDMI_14, 0x0040, 0x0038, 0x0003, LT_3_40GBPS},
+	{340, 0, 8, HDMI_14, 0x0040, 0x0038, 0x0003, LT_3_40GBPS},
+	{348.5, 0, 8, HDMI_20, 0x1A40, 0x0018, 0x0003, GT_3_40GBPS},
+	{356.5, 0, 8, HDMI_20, 0x1A40, 0x0018, 0x0003, GT_3_40GBPS},
+	{360, 0, 8, HDMI_20, 0x1A40, 0x0018, 0x0003, GT_3_40GBPS},
+	{360, 0, 10, HDMI_20, 0x3B4C, 0x0038, 0x0003, GT_3_40GBPS},
+	{360, 0, 12, HDMI_20, 0x5A64, 0x0038, 0x0003, GT_3_40GBPS},
+	{371.25, 0, 8, HDMI_20, 0x1A40, 0x0018, 0x0003, GT_3_40GBPS},
+	{371.25, 0, 10, HDMI_20, 0x3B4C, 0x0038, 0x0003, GT_3_40GBPS},
+	{371.25, 0, 12, HDMI_20, 0x5A64, 0x0038, 0x0003, GT_3_40GBPS},
+	{380.5, 0, 8, HDMI_20, 0x1A40, 0x0018, 0x0003, GT_3_40GBPS},
+	{396, 0, 8, HDMI_20, 0x1A40, 0x0018, 0x0003, GT_3_40GBPS},
+	{396, 0, 10, HDMI_20, 0x3B4C, 0x0038, 0x0003, GT_3_40GBPS},
+	{396, 0, 12, HDMI_20, 0x5A64, 0x0038, 0x0003, GT_3_40GBPS},
+	{432, 0, 8, HDMI_20, 0x1A40, 0x0018, 0x0003, GT_3_40GBPS},
+	{432, 0, 10, HDMI_20, 0x3B4C, 0x0038, 0x0003, GT_3_40GBPS},
+	{443.25, 0, 8, HDMI_20, 0x1A40, 0x0018, 0x0003, GT_3_40GBPS},
+	{475.2, 0, 8, HDMI_20, 0x1A40, 0x0018, 0x0003, GT_3_40GBPS},
+	{475.2, 0, 10, HDMI_20, 0x3B4C, 0x0038, 0x0003, GT_3_40GBPS},
+	{495, 0, 8, HDMI_20, 0x1A40, 0x0018, 0x0003, GT_3_40GBPS},
+	{505.25, 0, 8, HDMI_20, 0x1A40, 0x0018, 0x0003, GT_3_40GBPS},
+	{552.75, 0, 8, HDMI_20, 0x1A40, 0x0018, 0x0003, GT_3_40GBPS},
+	{594, 0, 8, HDMI_20, 0x1A40, 0x0018, 0x0003, GT_3_40GBPS},
+	{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+
+};
+
+
+int phy302_configure_supported(hdmi_tx_dev_t *dev, double pClk, color_depth_t color,
+		pixel_repetition_t pixel)
+{
+	int i   = 0;
+
+	// Color resolution 0 is 8 bit color depth
+	if (color == 0)
+		color = COLOR_DEPTH_8;
+
+	pClk = phy_get_freq(pClk);
+
+	for (i = 0; phy302[i].clock != 0; i++ ){
+		if(double_is_equal(pClk, phy302[i].clock) &&
+				(color == phy302[i].color) &&
+				(pixel == phy302[i].pixel)){
+			return TRUE;
+		}
+	}
+
+	return FALSE;
+}
+
+struct phy_config * phy302_get_configs(double pClk, color_depth_t color,
+		pixel_repetition_t pixel)
+{
+
+	int i = 0;
+
+	for (i = 0; phy302[i].clock != 0; i++ ){
+
+		pClk = phy_get_freq(pClk);
+
+		if(double_is_equal(pClk, phy302[i].clock) &&
+				(color == phy302[i].color) &&
+				(pixel == phy302[i].pixel)){
+			return &(phy302[i]);
+		}
+	}
+
+	return NULL;
+}
+
+int phy302_configure(hdmi_tx_dev_t *dev, double pClk, color_depth_t color, pixel_repetition_t pixel)
+{
+	int i   = 0;
+	u32 phyRead = 0;
+	u8 lock = 0;
+	struct phy_config * config = NULL;
+	u32 value = 0;
+
+	// Color resolution 0 is 8 bit color depth
+	if (color == 0)
+		color = COLOR_DEPTH_8;
+
+	config = phy302_get_configs(pClk, color, pixel);
+
+	if (config == NULL) {
+		LOGGER(SNPS_ERROR,"Configuration for clk %f color depth %d"
+				  " pixel repetition %d not found", pClk, color, pixel);
+		return -1;
+	}
+
+	// Set PHYTXCONFIG txphy_hdmi_i2c_jtagz=1(I2C)
+	value = dev_read(dev, 0xb0020);
+	value |= (1 << 9);
+	dev_write(dev, 0xb0020, value);
+
+	// TC Initial
+	board_ZcalReset(1);
+
+	mc_phy_reset(dev, 1);
+
+	dev_write_mask(dev, PHY_CONF0, PHY_CONF0_TXPWRON_MASK, 0);
+	dev_write_mask(dev, PHY_CONF0, PHY_CONF0_PDDQ_MASK, 1);
+	dev_write_mask(dev, PHY_CONF0, PHY_CONF0_SVSRET_MASK, 1);
+
+	// Start IO calibration
+	board_ZcalReset(0);
+
+	// Wait for zcal done
+	do{
+		snps_sleep(5);
+	} while(!(dev_read(dev, 0xb0010) & 0x1) && (i++ < PHY_TIMEOUT));
+
+	if (i>=PHY_TIMEOUT){
+		LOGGER(SNPS_ERROR,"Timeout waiting for zcal done");
+	}
+
+	mc_phy_reset(dev, 0);
+
+	phy_reconfigure_interface(dev);
+
+	phy_write(dev, OPMODE_PLLCFG, config->oppllcfg);
+	if(phy_read(dev, OPMODE_PLLCFG, &phyRead) || (phyRead != config->oppllcfg))
+		LOGGER(SNPS_ERROR, "%s:OPMODE_PLLCFG Mismatch Write 0x%04x Read 0x%04x",
+				__func__, config->oppllcfg , phyRead);
+
+	phy_write(dev, PLLCURRCTRL, config->pllcurrctrl);
+	if(phy_read(dev, PLLCURRCTRL, &phyRead) || (phyRead != config->pllcurrctrl))
+		LOGGER(SNPS_ERROR, "%s:PLLCURRCTRL Mismatch Write 0x%04x Read 0x%04x",
+				__func__, config->pllcurrctrl , phyRead);
+
+	phy_write(dev, PLLGMPCTRL, config->pllgmpctrl);
+	if(phy_read(dev, PLLGMPCTRL, &phyRead) || (phyRead != config->pllgmpctrl))
+		LOGGER(SNPS_ERROR, "%s:PLLGMPCTRL Mismatch Write 0x%04x Read 0x%04x",
+				__func__, config->pllgmpctrl , phyRead);
+
+	phy_write(dev, TXTERM, config->txterm);
+	if(phy_read(dev, TXTERM, &phyRead) || (phyRead != config->txterm))
+		LOGGER(SNPS_ERROR, "%s:TXTERM Mismatch Write 0x%04x Read 0x%04x",
+				__func__, config->txterm , phyRead);
+
+	phy_write(dev, VLEVCTRL, config->vlevctrl);
+	if(phy_read(dev, VLEVCTRL, &phyRead) || (phyRead != config->vlevctrl))
+		LOGGER(SNPS_ERROR, "%s:VLEVCTRL Mismatch Write 0x%04x Read 0x%04x",
+				__func__, config->vlevctrl , phyRead);
+
+	phy_write(dev, CKSYMTXCTRL, config->cksymtxctrl);
+	if(phy_read(dev, CKSYMTXCTRL, &phyRead) || (phyRead != config->cksymtxctrl))
+		LOGGER(SNPS_ERROR, "%s:CKSYMTXCTRL Mismatch Write 0x%04x Read 0x%04x",
+				__func__, config->cksymtxctrl , phyRead);
+
+	dev_write_mask(dev, PHY_CONF0, PHY_CONF0_PDDQ_MASK, 0);
+	dev_write_mask(dev, PHY_CONF0, PHY_CONF0_TXPWRON_MASK, 1);
+
+	/* wait PHY_TIMEOUT no of cycles at most for the PLL lock signal to raise ~around 20us max */
+	for (i = 0; i < PHY_TIMEOUT; i++) {
+		snps_sleep(5);
+		lock = phy_phase_lock_loop_state(dev);
+		if (lock & 0x1) {
+			LOGGER(SNPS_DEBUG,"PHY PLL locked");
+			return TRUE;
+		}
+	}
+
+	error_set(ERR_PHY_NOT_LOCKED);
+	LOGGER(SNPS_ERROR,"PHY PLL not locked");
+	return FALSE;
+}

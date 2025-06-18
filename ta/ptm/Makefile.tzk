@@ -1,0 +1,21 @@
+### must be in the beginning of file ###
+include $(BUILDSYS)/common.mak
+
+### MODULE NAME ###
+TA_MODULE     := libptm.ta
+
+
+### MODULE SOURCE FILE ###
+TA_SRC_FILES:= $(wildcard ./src/*.c)
+TA_SRC_FILES += $(wildcard ./comm/source/*.c)
+TA_SRC_FILES += $(AMPSDKTOP)/amp/src/ddl/common/genPool.c
+
+### MODULE CFLAGS/LDFLAGS ###
+TA_CFLAGS+=  -Wall -Werror -Wno-unused -DTA_COMPILE \
+             $(TEE_EXT_INC) \
+             -I./comm/include/  \
+             -I./inc/ \
+             -I$(AMPSDKTOP)/amp/src/ddl/inc/
+
+### must be at the end of file ###
+include $(BUILDSYS)/ta.mak

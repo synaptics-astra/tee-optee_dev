@@ -1,0 +1,30 @@
+// SPDX-License-Identifier: GPL-2.0
+/* Copyright (C) 2025 Synopsys, Inc. */
+/* Copyright (C) 2025 Synaptics Incorporated */
+
+#ifndef SRC_PHY_PHY_305_H_
+#define SRC_PHY_PHY_305_H_
+
+#include "../../include/hdmitx_dev.h"
+#include "util/types.h"
+#include "core/video.h"
+#include "phy.h"
+#include "phy/phy_i2c.h"
+
+#include "core/main_controller.h"
+#include "util/log.h"
+#include "util/error.h"
+#include "bsp/board.h"
+
+#include "phy_reg.h"
+#include "bsp/access.h"
+
+#include "interrupt/interrupt_reg.h"
+#include "system.h"
+
+int phy305_configure_supported(hdmi_tx_dev_t *dev, double pClk, color_depth_t color, pixel_repetition_t pixel);
+int phy305_configure(hdmi_tx_dev_t *dev, double pClk, color_depth_t color, pixel_repetition_t pixel);
+
+
+
+#endif /* SRC_PHY_PHY_305_H_ */

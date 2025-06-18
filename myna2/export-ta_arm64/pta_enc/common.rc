@@ -1,0 +1,151 @@
+SYNA_TA_MagicNum=0x5441494d
+SYNA_TA_VendorID=0x0
+SYNA_TA_VendorName=SYNAPTIC
+SYNA_TA_SegID=0x00000000
+SYNA_TA_SegIDMask=0xffffffff
+SYNA_TA_Ver=0x00000001
+SYNA_TA_VerMask=0xffffffff
+SYNA_TA_FooterMagicNum=0x4d494154
+TA_COMBO_HEADER_MagicNum=0x54413330
+TA_COMBO_HEADER_Size=32
+TA_HEADER_MagicNum=0x54413530
+TA_HEADER_Size=32
+
+TA_X_ProdImgFlag=0x00000000
+TA_X_VendorGID=0x00000001
+TA_X_CertID=0x00000001
+
+TA_PATH=$(dirname $1)
+TA_BASENAME=$(basename $1 .ta)
+TA_RAW_BIN=${TA_BASENAME}.ta_raw
+
+TA_UUID=0x${TA_BASENAME:0-2:2}${TA_BASENAME:0-4:2}
+
+if [ "is$TA_OUTPATH" != "is" ];then
+  OutputData=$TA_OUTPATH/
+else
+  OutputData=$TA_PATH/pta_enc
+fi
+
+l_endian32() {
+  echo `printf "%08x"  $1` | grep -o .. | tac | echo "$(tr -d '\n')" | xxd -r -p
+}
+
+function l_endian16() {
+  echo `printf "%04x"  $1` | grep -o .. | tac | echo "$(tr -d '\n')" | xxd -r -p
+}
+
+gen_ta_extras(){
+  local f_out
+  local f_ta_name
+  local ta_type
+
+  f_out=$1; shift
+  f_ta_name=$1; shift
+  ta_type=$1; shift
+
+  l_endian32 $TA_X_ProdImgFlag >$f_out
+  l_endian32 $TA_X_VendorGID >>$f_out
+  l_endian32 $TA_X_CertID >>$f_out
+
+  f_ta_name=${f_ta_name:0:16}
+  echo -n `printf "%s" ${f_ta_name}` >>$f_out
+  gname_len=${#f_ta_name}
+  echo `printf "%0$(((16 - gname_len) * 2))x" 0` | xxd -r -p >>$f_out
+
+  ## Mask the LSB 2-bytes
+  l_endian32 ${TA_ROOT_UUID[3]}  > $f_out.uuid3
+  l_endian16 $TA_UUID           > $f_out.ta_uuid
+  dd if=$f_out.ta_uuid of=$f_out.uuid3 bs=1 conv=notrunc seek=2
+  UUID3=`xxd -p $f_out.uuid3`
+  rm $f_out.uuid3 $f_out.ta_uuid
+
+  l_endian32 ${TA_ROOT_UUID[0]} >>$f_out
+  l_endian32 ${TA_ROOT_UUID[1]} >>$f_out
+  l_endian32 ${TA_ROOT_UUID[2]} >>$f_out
+  echo -ne $UUID3 | xxd -r -p   >>$f_out
+
+  if [ "$ta_type" = "0" ]; then
+     l_endian32 0x00000000 >>$f_out
+  elif [ "$ta_type" = "1" ]; then
+     l_endian32 0x00000001 >>$f_out
+  else
+     echo "No such TA type!"
+     l_endian32 0x00000000 >>$f_out
+  fi
+}
+
+genx_secure_image() {
+  v_image_type=$1; shift
+  in_extras=$1; shift
+  in_length=$1; shift
+  f_input=$1; shift
+  f_output=$1; shift
+
+  ### Check input file ###
+  [ -f $f_input ]
+
+  ### Exectuable for generating secure image ###
+  if [ "is${CONFIG_RDK_SYS}" != "isy" ]; then
+    exec_cmd=${security_tools_path}gen_x_secure_image
+    [ -x $exec_cmd ]
+  else
+    exec_cmd=gen_x_secure_image
+  fi
+
+  ### Prepare arguments ###
+  unset exec_args
+
+  # Other parameters
+  exec_args="${exec_args} --img_type=$v_image_type"
+  exec_args="${exec_args} --key_type=ta"
+  #exec_args="${exec_args} --seg_id=0x00000000"
+  #exec_args="${exec_args} --seg_id_mask=0xFFFFFFFF"
+  #exec_args="${exec_args} --version=0x00000001"
+  #exec_args="${exec_args} --version_mask=0xFFFFFFFF"
+  exec_args="${exec_args} --length=$in_length"
+  exec_args="${exec_args} --extras=$in_extras"
+  exec_args="${exec_args} --workdir-security-tools=${security_tools_path}"
+  exec_args="${exec_args} --workdir-security-keys=${security_keys_path}"
+
+  # Input and output
+  exec_args="${exec_args} --in_payload=${f_input} --out_store=${f_output}"
+
+  ### Generate secure image ###
+  eval ${exec_cmd} "${exec_args}"
+}
+
+enc_x_ta(){
+
+  local f_in
+  local f_out
+  local type
+
+  # Process arguments
+  f_in=$1; shift
+  f_out=$1; shift
+  type=$1; shift
+
+  [ "x${f_out}" != "x" ]
+  [ "x${f_in}" != "x" ]
+
+  [ -f $f_in ]
+
+  local f_in_ta_extras="$(dirname ${f_in})/$(basename ${f_in} .ta_raw).extra"
+  local f_ta_enc="$(dirname ${f_in})/$(basename ${f_in} .ta_raw).enc"
+
+  gen_ta_extras $f_in_ta_extras $(basename ${f_in} .ta_raw) $type
+
+  genx_secure_image "TA" $f_in_ta_extras 0x0 $f_in $f_ta_enc
+
+  # Pack GenX TA ROOT cert, TA cert and signed TA
+  local f_tacert="${tacert_path}/$(basename ${f_in} .ta_raw).cert"
+  local f_tarootcert="${tarootcert_path}/TA_Root_Cert.rcert"
+
+  [ -f $f_tacert ]
+  [ -f $f_tarootcert ]
+  [ -f $f_ta_enc ]
+
+  cat $f_tarootcert $f_tacert $f_ta_enc >$f_out
+}
+
