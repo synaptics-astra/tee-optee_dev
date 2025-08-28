@@ -96,6 +96,7 @@ TEE_Result TA_EXPORT TA_InvokeCommandEntryPoint(void *sessionContext,
     HDL_semaphore *pSemHandle;
     HDL_dhub *pdHubHandle = NULL;
     HDL_hbo *pHBO = NULL;
+    unsigned int channel_init_mask_vpp = 0;
 
 #if 0
     TA_LOGH("%s, cmd:%d, para0a=%x, para0b=%x, para1a=%x, para1b=%x,\n",
@@ -107,7 +108,7 @@ TEE_Result TA_EXPORT TA_InvokeCommandEntryPoint(void *sessionContext,
         case DHUB_INIT:
             /*strictly init VPP dhub; params[0].value.a: CPUINDEX from kernel driver*/
             DhubInitialization(params[0].value.a, VPP_DHUB_BASE, VPP_HBO_SRAM_BASE,
-                               &VPP_dhubHandle, VPP_config, VPP_NUM_OF_CHANNELS);
+                               &VPP_dhubHandle, VPP_config, VPP_NUM_OF_CHANNELS, channel_init_mask_vpp);
 #ifndef CONFIG_OPTEE
             uint8_t *shmAddr = NULL;
             uint32_t size = 0;

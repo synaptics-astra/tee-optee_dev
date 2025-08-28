@@ -124,6 +124,7 @@ enum {
 	VDEC_PUSH_BUFFER_V2,
 	VDEC_POP_BUFFER_V2,
 	VDEC_DECODE_STREAM_V2,
+	VDEC_DRAIN_POOL_V2,
 	/* was TIMEOUT */
 	VDEC_ABORT_HW_V2,
 	/* was CLOSE_STREAM */
@@ -132,7 +133,7 @@ enum {
 	VDEC_STREAM_SWITCH_OUT_V2,
 	VDEC_DESTROY_INSTANCE_V2,
 
-	VENC_CREATE_INSTANCE_V2 = 17,
+	VENC_CREATE_INSTANCE_V2 = 18,
 	VENC_CONFIG_STREAM_V2,
 	VENC_PUSH_BUFFER_V2,
 	VENC_POP_BUFFER_V2,
@@ -142,7 +143,7 @@ enum {
 	VENC_STREAM_SWITCH_OUT_V2,
 	VENC_DESTROY_INSTANCE_V2,
 
-	VPU_CTX_SWITCH_INST_v2 = 26,
+	VPU_CTX_SWITCH_INST_v2 = 27,
 
 	VMETA_CMD_MAX_V2
 };
@@ -197,7 +198,7 @@ enum syna_frame_field {
 };
 
 /* ***VPU firmware APIs begins here*** */
-/* VPU Firmware version: 34693 */
+/* VPU Firmware version: 34790 */
 #ifdef __KERNEL__
 enum syna_dec_channel
 {
@@ -427,8 +428,14 @@ struct syna_vdec_config
 	unsigned int qos_w_low;
 	unsigned int qos_r_high;
 	unsigned int qos_r_low;
-	unsigned int h265_tile_opt;
-	unsigned int h264_low_latency_output;
+	unsigned char h265_tile_opt;
+	unsigned char h264_low_latency_output;
+	unsigned char reserved5;
+	unsigned char reserved6;
+	unsigned char reserved7;
+	unsigned char disable_gdr;
+	unsigned char operating_point;
+	unsigned char config_mode;
 	unsigned int mmu_enable;
 	unsigned char mmu_page_size;
 	unsigned int mmu_page_base;
@@ -439,7 +446,7 @@ struct syna_vdec_config
 	unsigned char mtu_dhub;
 	unsigned char fast_mode;
 	unsigned char mtr_force_uncmpr;
-	unsigned char non_tunnel;
+	unsigned char overallocation_mode;
 	unsigned char super_mode;
 	unsigned char qos_mmu;
 	unsigned int wdt_cnt;

@@ -714,6 +714,7 @@ INT BE_HDMITX_GetHdcpKsv(BE_HDMITX_DATA *pHdmiTx, VPP_HDCP_KSV_DATA *pHDCPKsv);
 INT BE_HDMITX_HDCP2XSetOpMode(BE_HDMITX_DATA *pHdmiTx, INT opMode);
 BOOL BE_HDMITX_phy_getState(BE_HDMITX_DATA *pHdmiTx);
 unsigned char BE_HDMITX_ConfigureScrambler(BE_HDMITX_DATA *pHdmiTx);
+INT BE_HDMITX_PowerOff(BE_HDMITX_DATA *pHdmiTx);
 #endif // __VPP_BE_HDMITX_H__
 
 

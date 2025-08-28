@@ -108,7 +108,6 @@ TA_C_INCLUDES  += $(TA_PATH)/../../common/include/
 #TA_C_INCLUDES  += $(AMPSDKTOP)/amp/inc
 ########OSAL head file#####
 TA_C_INCLUDES  += $(OSAL_PATH)/include
-TA_C_INCLUDES  += $(TA_PATH)/../../common/osal/include
 ########DHUB head file#####
 TA_C_INCLUDES  += $(DHUB_PATH)/include
 TA_C_INCLUDES  += $(DHUB_PATH)/configs/$(chip)
@@ -140,7 +139,7 @@ TA_C_INCLUDES  += $(VPPTA_SPECIFIC_FOLDER)/source/CMU/include
 ifeq ($(SoC_Ver)$(SoC_Subversion), $(filter $(SoC_Ver)$(SoC_Subversion), dolphinZ1))
     TA_C_INCLUDES   += $(VPPTA_SPECIFIC_FOLDER)/source/MISC/source/dolphinZ1
 else
-    TA_C_INCLUDES   += $(VPPTA_SPECIFIC_FOLDER)/source/MISC/source/vs6xx
+    TA_C_INCLUDES   += $(VPPTA_SPECIFIC_FOLDER)/source/MISC/source/common
 endif
 
 TA_SRC_FILES +=  $(wildcard $(TA_PATH)/optee/*.c)

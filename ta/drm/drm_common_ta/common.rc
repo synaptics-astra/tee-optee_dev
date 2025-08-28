@@ -1,0 +1,19 @@
+dst_lib_dir=${CONFIG_SYNA_SDK_OUT_TARGET_PATH}/${CONFIG_TA_STATIC_LIB_PATH}/${syna_chip_name}/${syna_chip_rev}
+dst_inc_dir=${CONFIG_SYNA_SDK_OUT_TARGET_PATH}/${CONFIG_TA_STATIC_INC_PATH}/${syna_chip_name}/${syna_chip_rev}
+mkdir -p ${dst_lib_dir}
+mkdir -p ${dst_inc_dir}
+
+cflags=${CONFIG_TOOLCHAIN_TA_CFLAG}
+ldflags=${CONFIG_TOOLCHAIN_TA_LDFLAG}
+
+if [ "is${CONFIG_TZK}" = "isy" ]; then
+  cflags="${cflags} -DCONFIG_TZK"
+fi
+
+make all -j ${CONFIG_CPU_NUMBER} \
+    -C ${mod_dir} TA_CROSS_COMPILE="${CONFIG_TOOLCHAIN_TA}" \
+    E_CFLAGS="${cflags}" E_LDFLAGS="${ldflags}" \
+    E_OBJ="${CONFIG_TOOLCHAIN_TA_OBJ_FILES}" BUILD_DIR="${build_dir}"
+
+make install -C ${mod_dir} TA_LIB_REL_DIR="${dst_lib_dir}" \
+    TA_INC_REL_DIR="${dst_inc_dir}" BUILD_DIR="${build_dir}"

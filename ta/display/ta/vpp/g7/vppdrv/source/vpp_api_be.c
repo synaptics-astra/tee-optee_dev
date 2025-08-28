@@ -370,6 +370,12 @@ int MV_VPPOBJ_SetHdmiPhyPower(int handle, int enable)
         return (MV_VPP_OK);
     }
 
+    if(!(vpp_obj->iVppFeatureCfg[0] & VPP_FEATURE_HDMITX))
+    {
+        VPPAPI_DBG_INFO("Skip 5V, VPP_BE_SetHdmiPhyPower\n");
+        return (MV_VPP_OK);
+    }
+
     /* Enable HDMI 5V before powering up Phy */
     if(enable == TRUE) {
         VPP_SetHdmi5vState(enable);
@@ -2053,6 +2059,12 @@ int MV_VPPOBJ_CecEnable (int handle, int enable)
         return (MV_VPP_EUNCONFIG);
     }
 
+    if (!(vpp_obj->iVppFeatureCfg[0] & VPP_FEATURE_HDMITX))
+    {
+        VPPAPI_DBG_INFO("Skip VPP_BE_CEC_Enable\n");
+        return (MV_VPP_OK);
+    }
+
     if (vpp_obj->be.enableCec == enable) {
         // Nothing has to be done
         return (MV_VPP_OK);
@@ -2300,6 +2312,12 @@ int MV_VPPOBJ_SetHdmiPhy(int handle, unsigned int * phySetting, unsigned int Phy
     if (vpp_obj->status == STATUS_INACTIVE){
         /* VPP module is not configured */
         return (MV_VPP_EUNCONFIG);
+    }
+
+    if (!(vpp_obj->iVppFeatureCfg[0] & VPP_FEATURE_HDMITX))
+    {
+        VPPAPI_DBG_INFO("Skip VPP_BE_SetHdmiPhy\n");
+        return (MV_VPP_OK);
     }
 
     return VPP_BE_SetHdmiPhy(vpp_obj, phySetting, PhyBufSize);

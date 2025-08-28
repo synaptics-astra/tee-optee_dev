@@ -1,0 +1,20 @@
+dst_dir=${CONFIG_SYNA_SDK_OUT_TARGET_PATH}/ta/libfactory.ta/${syna_chip_name}/${syna_chip_rev}
+lib_dep_dir=${CONFIG_SYNA_SDK_OUT_TARGET_PATH}/${CONFIG_TA_STATIC_LIB_PATH}/${syna_chip_name}/${syna_chip_rev}
+lib_dep_inc_dir=${CONFIG_SYNA_SDK_OUT_TARGET_PATH}/${CONFIG_TA_STATIC_INC_PATH}/${syna_chip_name}/${syna_chip_rev}
+
+cflags=${CONFIG_TOOLCHAIN_TA_CFLAG}
+ldflags=${CONFIG_TOOLCHAIN_TA_LDFLAG}
+
+if [ "is${CONFIG_TZK}" = "isy" ]; then
+  cflags="${cflags} -DCONFIG_TZK"
+fi
+
+make all -j ${CONFIG_CPU_NUMBER} \
+    -C ${mod_dir} TA_CROSS_COMPILE="${CONFIG_TOOLCHAIN_TA}" \
+    E_CFLAGS="${cflags}" E_LDFLAGS="${ldflags}" \
+    E_OBJ="${CONFIG_TOOLCHAIN_TA_OBJ_FILES}" \
+    BUILD_DIR="${build_dir}" LIB_DEPT_DIR="${lib_dep_dir}" \
+    LIB_HEADER_INC_DIR="${lib_dep_inc_dir}" \
+    CHIP_FULL_NAME="${syna_chip_name}${syna_chip_rev}"
+
+make install -C ${mod_dir} TA_REL_DIR="${dst_dir}" BUILD_DIR="${build_dir}"

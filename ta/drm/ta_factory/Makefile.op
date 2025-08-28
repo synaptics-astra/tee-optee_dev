@@ -1,0 +1,20 @@
+CFG_TEE_TA_LOG_LEVEL ?= 4
+CFG_TA_OPTEE_CORE_API_COMPAT_1_1=y
+# CFG_SYNA_PTA=y (encryption with synaptics keys and certs)
+# CFG_SYNA_PTA="" (3rd-party encryption)
+CFG_SYNA_PTA=y
+
+### MODULE NAME ###
+TA_LIB_NAME = libfactory_ta
+
+# The UUID for the Trusted Application
+TA_UUID = 1316a183-894d-43fe-9893-bb946ae10420
+BINARY = $(TA_UUID)
+
+-include $(TA_DEV_KIT_DIR)/mk/ta_dev_kit.mk
+
+ifeq ($(wildcard $(TA_DEV_KIT_DIR)/mk/ta_dev_kit.mk), )
+clean:
+	@echo 'Note: $$(TA_DEV_KIT_DIR)/mk/ta_dev_kit.mk not found, cannot clean TA'
+	@echo 'Note: TA_DEV_KIT_DIR=$(TA_DEV_KIT_DIR)'
+endif

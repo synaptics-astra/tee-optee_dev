@@ -738,11 +738,14 @@ static int MV_VPPOBJ_BindSHM_SingleBuffer(TEE_Param params[4])
     case VPP_OBJCONFIG:
        {
            INT8 *config;
-           int plane_size=0;
+           int plane_size;
+           int vout_size;
            config = (INT8 *)shmAddr;
            plane_size = (sizeof(INT32)*(MAX_NUM_PLANES));
+           vout_size = sizeof(INT32)* (MAX_NUM_VOUTS);
            params[2].value.a = MV_VPPOBJ_Config(0,(const int *) &config[0],(const int *) &config[(plane_size)],
-                           (const int *) &config[(plane_size*2)],(const int *) &config[(plane_size*3)]);
+                           (const int *) &config[(plane_size*2)],(const int *) &config[(plane_size*3)],
+                           (const int *) &config[(plane_size*3) + vout_size]);
        }
     break;
 

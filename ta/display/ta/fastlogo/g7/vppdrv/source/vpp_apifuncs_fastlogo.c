@@ -118,6 +118,9 @@ int MV_VPPOBJ_EnableInterrupt(int handle, int flag)
     vpp_obj = g_vpp->vpp_objs[handle];
 
     MV_VPP_EnableSemIntr(vpp_obj, CPCB_1, flag);
+#ifdef ENABLE_GFX2_VOP2_PATH
+    MV_VPP_EnableSemIntr(vpp_obj, CPCB_2, flag);
+#endif //ENABLE_GFX2_VOP2_PATH
 
     return (MV_VPP_OK);
 }

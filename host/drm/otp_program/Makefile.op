@@ -1,0 +1,36 @@
+export V?=0
+
+# If _HOST or _TA specific compilers are not specified, then use CROSS_COMPILE
+HOST_CROSS_COMPILE ?= $(CROSS_COMPILE)
+
+CC      ?= $(CROSS_COMPILE)gcc
+LD      ?= $(CROSS_COMPILE)ld
+AR      ?= $(CROSS_COMPILE)ar
+NM      ?= $(CROSS_COMPILE)nm
+OBJCOPY ?= $(CROSS_COMPILE)objcopy
+OBJDUMP ?= $(CROSS_COMPILE)objdump
+READELF ?= $(CROSS_COMPILE)readelf
+
+SRCS = src/otp_program_main.c src/DRM_OTP_Agent.c src/DRM_FIRSTBOOT_AGENT.c src/Key_Inject_NAND.c
+OBJS = $(SRCS:.c=.o)
+
+CFLAGS += -Wall -I../ta/include -I$(TEEC_EXPORT)/include -I./inc
+#Add/link other required libraries here
+LDADD += -lteec
+
+BINARY = otp_program
+
+.PHONY: all
+all: $(BINARY)
+	$(MAKE) CROSS_COMPILE="$(HOST_CROSS_COMPILE)" --no-builtin-variables
+
+$(BINARY): $(OBJS)
+	$(CC) $(LDFLAGS) -o $@ $(OBJS) $(LDADD)
+
+%.o: %.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+.PHONY: clean
+clean:
+	rm -f $(OBJS) $(BINARY)
+

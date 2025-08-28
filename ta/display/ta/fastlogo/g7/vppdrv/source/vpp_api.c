@@ -461,18 +461,26 @@ int MV_VPPOBJ_AVIO_Reset(void)
     return (MV_VPP_OK);
 }
 
-int MV_VPP_INITVPPS(int instance,UINT32 vpp_addr,UINT32 heap_handle)
+int MV_VPP_INITVPPS(int instance, UINT32 dhub_init_flag, UINT32 intr_init_flag)
 {
-    //g_vpp and gMemhandle can be directly assigned with the virtual address.
-    if (!g_vpp && vpp_addr == VPP_CA_INIT_MAGIC_NUM) {
+    unsigned int channel_init_mask_vpp = 0;
+    unsigned int channel_init_mask_ag = 0;
 
-        //"heap_handle" is not used from ca wrapper. but we will use it from outctrl to avoid dhub init.
-
+    if (dhub_init_flag) {
         //Initialize DHUB & BCM Schedular, We need VPP handle inside TA for DHUB operation
-        DhubInitialization(0, VPP_DHUB_BASE, VPP_HBO_SRAM_BASE, &VPP_dhubHandle, VPP_config, VPP_NUM_OF_CHANNELS);
-        DhubInitialization(0, AG_DHUB_BASE, AG_HBO_SRAM_BASE, &AG_dhubHandle, AG_config, AG_NUM_OF_CHANNELS);
+        channel_init_mask_vpp = (1 << VPP_NUM_OF_CHANNELS) - 1;
+        channel_init_mask_ag = (1 << AG_NUM_OF_CHANNELS) - 1;
     }
-    return MV_VPP_GetVppObjAddr();
+
+    //Initialize DHUB & BCM Schedular, We need VPP handle inside TA for DHUB operation
+    DhubInitialization(0, VPP_DHUB_BASE, VPP_HBO_SRAM_BASE, &VPP_dhubHandle, VPP_config, VPP_NUM_OF_CHANNELS, channel_init_mask_vpp);
+    DhubInitialization(0, AG_DHUB_BASE, AG_HBO_SRAM_BASE, &AG_dhubHandle, AG_config, AG_NUM_OF_CHANNELS, channel_init_mask_ag);
+
+    if (intr_init_flag) {
+        MV_VPPOBJ_EnableInterrupt(0, 1);
+    }
+
+    return 0;
 }
 
 #if 1//VPP_SW_BRINGUP: To debug interrupt infrastructure with Linux
@@ -521,6 +529,8 @@ int MV_VPP_Init(VPP_INIT_PARM *vpp_init_parm)
 {
     int i;
     TEE_Result res;
+    unsigned int channel_init_mask_vpp = (1 << VPP_NUM_OF_CHANNELS) - 1;
+    unsigned int channel_init_mask_ag = (1 << AG_NUM_OF_CHANNELS) - 1;
 
     res = MV_VPP_InitVppObj(vpp_init_parm);
     if(res != TEE_SUCCESS) {
@@ -561,8 +571,8 @@ int MV_VPP_Init(VPP_INIT_PARM *vpp_init_parm)
 #endif //CONFIG_VPP_FASTLOGO_SUPPORT
 #ifdef CONFIG_AMP_TEE_ENABLE
     //Initialize DHUB & BCM Schedular, We need VPP handle inside TA for DHUB operation
-    DhubInitialization(0, VPP_DHUB_BASE, VPP_HBO_SRAM_BASE, &VPP_dhubHandle, VPP_config, VPP_NUM_OF_CHANNELS);
-    DhubInitialization(0, AG_DHUB_BASE, AG_HBO_SRAM_BASE, &AG_dhubHandle, AG_config, AG_NUM_OF_CHANNELS);
+    DhubInitialization(0, VPP_DHUB_BASE, VPP_HBO_SRAM_BASE, &VPP_dhubHandle, VPP_config, VPP_NUM_OF_CHANNELS, channel_init_mask_vpp);
+    DhubInitialization(0, AG_DHUB_BASE, AG_HBO_SRAM_BASE, &AG_dhubHandle, AG_config, AG_NUM_OF_CHANNELS, channel_init_mask_ag);
     BCM_SCHED_Open();
 #endif
 
@@ -1311,6 +1321,8 @@ int MV_VPPOBJ_Resume(int handle, BOOL optimize)
     UINT32 HdmiTxEvtCode, CecEvtCode;
     void* HdmiTxCtxPara;
     void* CecCtxPara;
+    unsigned int channel_init_mask_vpp = (1 << VPP_NUM_OF_CHANNELS) - 1;
+    unsigned int channel_init_mask_ag = (1 << AG_NUM_OF_CHANNELS) - 1;
 
     /*Resume power/clock here*/
     MV_VPP_DisableClkGate();
@@ -1341,12 +1353,12 @@ int MV_VPPOBJ_Resume(int handle, BOOL optimize)
     MV_VPP_AVPLL_Restore(vpp_obj->avpll_regs);
 #ifdef VPP_ENABLE_AVIO_RESET_DURING_SUSPEND_RESUME
 #ifdef VPP_DIAGS
-    DhubInitialization(getMPid(), VPP_DHUB_BASE, VPP_HBO_SRAM_BASE, &VPP_dhubHandle, VPP_config, VPP_NUM_OF_CHANNELS, DHUB_TYPE_128BIT);
-    DhubInitialization(getMPid(), AG_DHUB_BASE, AG_HBO_SRAM_BASE, &AG_dhubHandle, AG_config, AG_NUM_OF_CHANNELS, DHUB_TYPE_64BIT);
+    DhubInitialization(getMPid(), VPP_DHUB_BASE, VPP_HBO_SRAM_BASE, &VPP_dhubHandle, VPP_config, VPP_NUM_OF_CHANNELS, DHUB_TYPE_128BIT, channel_init_mask_vpp);
+    DhubInitialization(getMPid(), AG_DHUB_BASE, AG_HBO_SRAM_BASE, &AG_dhubHandle, AG_config, AG_NUM_OF_CHANNELS, DHUB_TYPE_64BIT, channel_init_mask_ag);
 #else
     //Initialize DHUB & BCM Schedular, We need VPP handle inside TA for DHUB operation
-    DhubInitialization(0, VPP_DHUB_BASE, VPP_HBO_SRAM_BASE, &VPP_dhubHandle, VPP_config, VPP_NUM_OF_CHANNELS);
-    DhubInitialization(0, AG_DHUB_BASE, AG_HBO_SRAM_BASE, &AG_dhubHandle, AG_config, AG_NUM_OF_CHANNELS);
+    DhubInitialization(0, VPP_DHUB_BASE, VPP_HBO_SRAM_BASE, &VPP_dhubHandle, VPP_config, VPP_NUM_OF_CHANNELS, channel_init_mask_vpp);
+    DhubInitialization(0, AG_DHUB_BASE, AG_HBO_SRAM_BASE, &AG_dhubHandle, AG_config, AG_NUM_OF_CHANNELS, channel_init_mask_ag);
 #endif
 #endif //VPP_ENABLE_AVIO_RESET_DURING_SUSPEND_RESUME
 
@@ -1383,7 +1395,7 @@ int MV_VPPOBJ_Resume(int handle, BOOL optimize)
     for(i=FIRST_CPCB; i<MAX_NUM_VOUTS; i++)
         voutport_cfg[i] = vpp_sus->vout[i].dvID;
 
-    MV_VPPOBJ_Config(handle, vinport_cfg, dv_cfg, zorder_cfg, voutport_cfg);
+    MV_VPPOBJ_Config(handle, vinport_cfg, dv_cfg, zorder_cfg, voutport_cfg, vpp_sus->iVppFeatureCfg);
     VPP_BE_Resume(vpp_obj);
     VPP_BE_MIPI_DsiInit(vpp_obj);
 
@@ -1970,7 +1982,7 @@ int MV_VPPOBJ_EnableBypassMode(int handle, int flag)
  * INPUT: NONE
  * RETURN: NONE
  **************************************/
-int MV_VPPOBJ_Config(int handle, const int *pvinport_cfg, const int *pdv_cfg, const int *pzorder_cfg, const int *pvoutport_cfg)
+int MV_VPPOBJ_Config(int handle, const int *pvinport_cfg, const int *pdv_cfg, const int *pzorder_cfg, const int *pvoutport_cfg, const int *pfeature_cfg)
 {
     int i, j;
     VPP_OBJ *vpp_obj;
@@ -2267,6 +2279,11 @@ int MV_VPPOBJ_Config(int handle, const int *pvinport_cfg, const int *pdv_cfg, co
     BCM_SCHED_SetMux(BCM_SCHED_Q1, 11); /* CPCB0 VDE -> Q1 */
     BCM_SCHED_SetMux(BCM_SCHED_Q3, 27); /* VOP2  FRST-> Q3 */
 
+    if (!(pfeature_cfg[0] & VPP_FEATURE_HDMITX))
+        VPP_BE_HdmiPowerDown(vpp_obj);
+
+    VPP_Memcpy(vpp_obj->iVppFeatureCfg, pfeature_cfg,
+               sizeof(vpp_obj->iVppFeatureCfg));
     /* set VPP module to be configured */
     vpp_obj->status = STATUS_ACTIVE;
 
@@ -2352,6 +2369,7 @@ int MV_VPPOBJ_OpenDispWindow(int handle, int planeID, VPP_WIN *win, VPP_WIN_ATTR
     VPP_OBJ *vpp_obj;
     int chanID;
     int cpcbID;
+    PLANE *plane;
 
     if (!win)
         return (MV_VPP_EBADPARAM);
@@ -2394,6 +2412,13 @@ int MV_VPPOBJ_OpenDispWindow(int handle, int planeID, VPP_WIN *win, VPP_WIN_ATTR
     if (VPP_GetResId(cpcbID) == RES_INVALID) {
         /* CPCB resolution need to be set first */
         return (MV_VPP_EBADCALL);
+    }
+
+    //Avoid re-opening of window
+    plane = &(vpp_obj->plane[planeID]);
+    if (plane->status != STATUS_INACTIVE) {
+        VPPAPI_DBG_ERROR("%s:%d - Plane already opened - %d!!!\n", __func__, __LINE__, planeID);
+        return (MV_VPP_ESWSTATEWRONG);
     }
 
     /* set video plane background window */
@@ -11208,21 +11233,29 @@ int MV_VPPOBJ_GetDispOutParams(int handle, VPP_DISP_OUT_PARAMS *pdispParams, int
     VPP_OBJ *vpp_obj;
     int cpcbID;
     VPP_DISP_OUT_PARAMS *pDispOutParams;
+    int nCpcb;
 
     CMD_CHECK(handle);
 
     if (!pdispParams)
         return MV_VPP_EBADPARAM;
 
-    if (size < (MAX_NUM_CPCBS * sizeof(VPP_DISP_OUT_PARAMS))) {
+#ifdef ENABLE_GFX2_VOP2_PATH
+    nCpcb = MAX_NUM_CPCBS;
+#else
+    nCpcb = 1;
+#endif
+
+    if (size < (nCpcb * sizeof(VPP_DISP_OUT_PARAMS))) {
         VPPAPI_DBG_ERROR("Size mismatch\n");
         return MV_VPP_EBADPARAM;
     }
-    pDispOutParams = (vpp_obj->dv[0].dispOutParams.uiResId == RES_INVALID) ?
-                     &vpp_obj->dispOutParams[0] : &vpp_obj->dv[0].dispOutParams;
 
-    for (i= 0; i < MAX_NUM_CPCBS; i++)
-        VPP_Memcpy(&pdispParams[i], &pDispOutParams[i], sizeof(VPP_DISP_OUT_PARAMS));
+    for (i= 0; i < nCpcb; i++) {
+        pDispOutParams = (vpp_obj->dv[i].dispOutParams.uiResId == RES_INVALID) ?
+                         &vpp_obj->dispOutParams[i] : &vpp_obj->dv[i].dispOutParams;
+        VPP_Memcpy(&pdispParams[i], pDispOutParams, sizeof(VPP_DISP_OUT_PARAMS));
+    }
 
     return (MV_VPP_OK);
 }

@@ -184,6 +184,7 @@ int MV_VPP_GetVppObjAddr(void)
 
 #ifdef VPP_ENABLE_FORCE_MAP_FOR_VIRT_ADDR
     force_memmap = 1;
+    g_vpp = NULL;
 #endif //VPP_ENABLE_FORCE_MAP_FOR_VIRT_ADDR
     instance_memmap = (VPP_TA_GetInstanceMapCount() < VPP_TA_GetInstanceNumber());
 
