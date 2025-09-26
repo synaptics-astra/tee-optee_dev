@@ -255,6 +255,8 @@ do { \
 
 #define OVPS_PARAMS vpp_obj->povps_obj_params
 
+#define MAX_NUM_FEATURE_CFG 1
+
 /* definition of suspend type */
 typedef enum __POWER_MODE__{
     POWER_MODE_NORMAL = 0,      // Not suspended
@@ -1684,6 +1686,7 @@ typedef struct VPP_OBJ_T {
 
     VPP_DSI_INFO    dsiInfo;
     VPP_DISP_OUT_PARAMS dispOutParams[MAX_NUM_CPCBS];
+    INT iVppFeatureCfg[MAX_NUM_FEATURE_CFG];
 } VPP_OBJ;
 
 /* definition of EE working mode */

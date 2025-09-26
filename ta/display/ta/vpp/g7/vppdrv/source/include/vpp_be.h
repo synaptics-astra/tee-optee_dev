@@ -53,6 +53,10 @@ extern "C" {
 #define VPP_BE_HDCP_RETRY_CHECK_TIMER  500
 #define VPP_BE_HDCP_LINKINTEG_RETRY_TIMER  100
 
+#define VPP_FEATURE_HDMITX            (1<<0)
+#define VPP_FEATURE_MIPI_DSI          (1<<1)
+#define MAX_NUM_FEATURE_CFG           1
+
 /* Mux control for the selection of input data.*/
 typedef enum VPP_VOP_SELECT_INPUT_T
 {
@@ -626,6 +630,9 @@ int VPP_BE_SetRptrDsHdcpVersion(VPP_OBJ *vpp_obj, int iHDCPVersion);
 void VPP_BE_IsSpecialSink(VPP_OBJ *vpp_obj, int *resIDUpdate, int *bitDepthUpdate, int *colorFmtUpdate);
 
 int VPP_BE_GetSinkFeatureMap (VPP_OBJ *vpp_obj, VPP_HDMI_SINKCAP_BITMASK *pSinkFeatureMap);
+
+void VPP_BE_HdmiPowerDown(VPP_OBJ *vpp_obj);
+
 #ifdef __cplusplus
 }
 #endif

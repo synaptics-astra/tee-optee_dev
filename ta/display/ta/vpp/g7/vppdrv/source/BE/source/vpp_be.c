@@ -838,6 +838,14 @@ int VPP_BE_ConfigHdmiVideoFmt(VPP_OBJ *vpp_obj, int color_fmt,
         return (MV_VPP_EBADPARAM);
     }
 
+    if(!(vpp_obj->iVppFeatureCfg[0] & VPP_FEATURE_HDMITX))
+    {
+#ifdef HDMI_SRV_SUPPORT
+        HdmiTxNotifyEvent (vpp_obj, pHdmiTx->eventCode, MV_VPP_EVENT_HDMI_VIDEO_CFG_ERR);
+#endif
+        return (MV_VPP_OK);
+    }
+
     if (pHdmiTx->videoParams.DispRes == resID &&
         pHdmiTx->videoParams.VideoFmt == color_fmt &&
         pHdmiTx->videoParams.ColorDepth == bit_depth &&
@@ -938,6 +946,8 @@ int VPP_BE_SendHdmiAVIInfoFrame(VPP_OBJ *vpp_obj)
 
     pHdmiTx = (BE_HDMITX_DATA*)(vpp_obj->be.hdmiTx);
 
+    if(!(vpp_obj->iVppFeatureCfg[0] & VPP_FEATURE_HDMITX))
+        return MV_VPP_OK;
     // Config AVI packet
     retCode = HdmiTxConfigAVIInfoFrame(vpp_obj, HDMI_USE_EXISTING,
                     HDMI_USE_EXISTING, vpp_obj->hdmi_bt2020en, FALSE);
@@ -1151,6 +1161,13 @@ int VPP_BE_ConfigHdmiAudioFmt(VPP_OBJ *vpp_obj, int enable,
         return (MV_VPP_OK);
     }
 
+    if(!(vpp_obj->iVppFeatureCfg[0] & VPP_FEATURE_HDMITX))
+    {
+#ifdef HDMI_SRV_SUPPORT
+        HdmiTxNotifyEvent (vpp_obj, pHdmiTx->eventCode, MV_VPP_EVENT_HDMI_AUDIO_CFG_ERR);
+#endif
+        return (MV_VPP_OK);
+    }
     // Get video resolution
     if (pHdmiTx->videoParams.DispRes == RES_INVALID)
     {
@@ -2349,9 +2366,16 @@ int VPP_BE_GetHPDStatus (VPP_OBJ *vpp_obj, int *pHpdStatus)
     /* when HDMI_SRV_SUPPORT is active, thread will be running to process HPD and read edid
        here, sync the HPD state when HPD is polled
      */
-    VPPHDMI_DBG_INFO("check for  pending HPD state change: %d/%d\n",
-            pHdmiTx->sinkConnChangeCount, pHdmiTx->polledSinkConnChangeCount);
-    if (pHdmiTx->sinkConnChangeCount != pHdmiTx->polledSinkConnChangeCount) {
+    VPPHDMI_DBG_INFO("check for pending HPD state change prev:%d poll:%d prev-hpd:%d cur-hpd:%d\n",
+        pHdmiTx->sinkConnChangeCount, pHdmiTx->polledSinkConnChangeCount,
+        pHdmiTx->rxConnected, *pHpdStatus);
+    /*Due to single TA instance from boot-flow HPD ISR maybe missed by avio
+      Since avio may not be ready to handle interrupt during DRM/VPP init
+      Additional rxConnected check will help process the stale HPD state change
+      JIRA: VSSDK-35586
+    */
+    if (pHdmiTx->sinkConnChangeCount != pHdmiTx->polledSinkConnChangeCount ||
+        pHdmiTx->rxConnected != *pHpdStatus) {
         VPP_BE_ProcessHPDStateChange (vpp_obj);
         if (pHdmiTx->polledSinkConnChangeCount == 0) {
             /* first time interrupt enable is setting the bit, clear it explicitely */
@@ -2759,6 +2783,7 @@ void VPP_BE_ProcessHPDStateChange(VPP_OBJ *vpp_obj)
     if (rxConnected == false) {
         printf("hdmi disconnected\n");
         BE_HDMITX_PowerOffTMDS(pHdmiTxData, 1);
+        pHdmiTxData->rxConnected = false;
     } else {
         printf("hdmi connected\n");
         pHdmiTxData->rxConnected = HdmiTxHandleHotPlug (vpp_obj, rxConnected);
@@ -3194,9 +3219,11 @@ int HdmiTxHandleHotPlug (VPP_OBJ *vpp_obj, BOOL rxConnected)
         vpp_obj->HLG_enable = FALSE;
         vpp_obj->HDR10PLUS_enable = FALSE;
 
-
         // Receiver plugged in
-        pHdmiTx->videoParams.DispRes = RES_INVALID;
+        /*FIXME: VSSDK-35670:  Workaround added to fix no audio issue
+          Ideally below param should be reset on each hotplug
+          and set after configuring video format post hotplug*/
+        //pHdmiTx->videoParams.DispRes = RES_INVALID;
         pHdmiTx->audSampFreq = CEA_AUDIO_SAMP_FREQ_MAX;
         pHdmiTx->frameCntr   = -1;
 
@@ -5358,4 +5385,11 @@ void VPP_BE_IsSpecialSink(VPP_OBJ *vpp_obj, int *resIDUpdate, int *bitDepthUpdat
         *resIDUpdate = RES_4Kx2K60;
     }
 #endif
+}
+
+void VPP_BE_HdmiPowerDown(VPP_OBJ *vpp_obj)
+{
+    BE_HDMITX_DATA  *pHdmiTx;
+    pHdmiTx = (BE_HDMITX_DATA*)(vpp_obj->be.hdmiTx);
+    BE_HDMITX_PowerOff(pHdmiTx);
 }

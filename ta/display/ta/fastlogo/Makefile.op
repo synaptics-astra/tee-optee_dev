@@ -1,6 +1,9 @@
 #/* SPDX-License-Identifier: GPL-2.0 */
 #/* Copyright (C) 2025 Synaptics Incorporated */
 
+ifeq ($(Single_Instance), y)
+CFG_SYNA_SINGLE_INSTANCE=y
+endif
 
 CFG_TEE_TA_LOG_LEVEL ?= 4
 CFG_TA_OPTEE_CORE_API_COMPAT_1_1=y

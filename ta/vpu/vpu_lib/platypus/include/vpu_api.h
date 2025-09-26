@@ -231,15 +231,15 @@ typedef vpu_config_t venc_config_t;
 #define VPU_RC_PIC_HRDS_ERROR           30007
 #define VPU_RC_SLICE_MISS               30006                         // Not a fatal error; slice missing for non-ASO streams.
 #define VPU_RC_UNSUPPORTED_SYNTAX       30005                         // Not a fatal error; Informational
-#define VPU_RC_INTERNAL_ERROR          -30001
-#define VPU_RC_INVALID_ARGUMENT        -30002
-#define VPU_RC_INVALID_CONFIG          -30003
-#define VPU_RC_UNSUPPORTED_FORMAT      -30004
-#define VPU_RC_UNSUPPORTED_RESOLUTION  -30005
-#define VPU_RC_UNSUPPORTED_BITDEPTH    -30006
-#define VPU_RC_HW_TIMEOUT              -30007
-#define VPU_NON_EXIST_HW_IP            -30008
-#define VPU_NON_IMPLEMENTED_ROUTINE    -30009
+#define VPU_RC_INTERNAL_ERROR          -30001                         // 0xffff8acf
+#define VPU_RC_INVALID_ARGUMENT        -30002                         // 0xffff8ace
+#define VPU_RC_INVALID_CONFIG          -30003                         // 0xffff8acd
+#define VPU_RC_UNSUPPORTED_FORMAT      -30004                         // 0xffff8acc
+#define VPU_RC_UNSUPPORTED_RESOLUTION  -30005                         // 0xffff8acb
+#define VPU_RC_UNSUPPORTED_BITDEPTH    -30006                         // 0xffff8aca
+#define VPU_RC_HW_TIMEOUT              -30007                         // 0xffff8ac9
+#define VPU_NON_EXIST_HW_IP            -30008                         // 0xffff8ac8
+#define VPU_NON_IMPLEMENTED_ROUTINE    -30009                         // 0xffff8ac7
 
 #define VDEC_RC_OK                      VPU_RC_OK
 #define VDEC_RC_PIC_HRDS_ERROR          VPU_RC_PIC_HRDS_ERROR
@@ -285,8 +285,8 @@ enum
     VDEC_OUTPUT_SPUV,
     VDEC_OUTPUT_SPUV_10bDWA,
     VDEC_OUTPUT_SPVU,
-    VDEC_OUTPUT_YUV,
-    VDEC_OUTPUT_YVU,  // YVU output format is only for vmeta
+    VDEC_OUTPUT_YUV,  // YUV output format is not supported since BG7
+    VDEC_OUTPUT_YVU,  // YVU output format is only supported by vMeta
     VDEC_OUTPUT_TILE,
     VDEC_OUTPUT_TILE_TILE,
     VDEC_OUTPUT_TILE_DUPLICATE = VDEC_OUTPUT_TILE_TILE,
@@ -494,7 +494,7 @@ TYPEDEF_STRUCT(vdec_strm_config_t)
     unsigned int    tile_8bmode;            //!< 0: auto  1: TILE_H8V4  2: TILE_V4H8
     unsigned int    no_res_change;          //!< 0: resolution change allowd, 1: resolution change forbidden
 
-    unsigned int    force_ref_out;          //!< 1: output reference buffer even for non-refence picture;
+    unsigned int    force_ref_out;          //!< 1: output reference buffer even for non-reference picture;
     unsigned int    disable_dis_out;        //!< 1: don't output display buffer;
 
     unsigned int    vxrd_paddr;             //!< only for BG3 with two vMeta instances;
@@ -503,9 +503,8 @@ TYPEDEF_STRUCT(vdec_strm_config_t)
     unsigned int    rotation_allow;         //!< 0: NOT rotate, 1: maybe rotate for some pics
     unsigned int    rotate_mode;            //!< 0: original, 1: 90 degree, 2: 180 degree, 3: 270 degree, 4: horizontal flip, 5, vertical flip
 
-    // for vmeta only
-    unsigned int    disable_min_strm_size;  //!< decoding would kick off 0: min_strm_size = 4k; 1: (min_strm_size = 4k) || (sbuf_load - sbuf_free) >= 8
-    unsigned int    dpb_force_flush;        //!< 1: force flush dpb@sps header for error handling.
+    unsigned int    disable_min_strm_size;  //!< [vMeta only]: decoding would kick off 0: min_strm_size = 4k; 1: (min_strm_size = 4k) || (sbuf_load - sbuf_free) >= 8.
+    unsigned int    dpb_force_flush;        //!< [vMeta only]: 1: force flush dpb@sps header for error handling.
 
     // hantro g1 field
     unsigned int    skipNonReference;       //!< Flag to enable decoder skip non-reference * frames to reduce processor load
@@ -513,7 +512,7 @@ TYPEDEF_STRUCT(vdec_strm_config_t)
     unsigned int    dither_bit;             //!< refer to macro "PIC_BITDEPTH_xxx"
 
     unsigned char   dbg_log_enable;         //!< enable debug log
-    unsigned char   turbo_mode;             //!< 0: off, 1: on, for av1 only
+    unsigned char   turbo_mode;             //!< 0: off, 1: on, for AV1 and VP9 only
     unsigned char   reserved1;              //!< Reserved.
     unsigned char   reserved2;              //!< Reserved.
 
@@ -522,10 +521,10 @@ TYPEDEF_STRUCT(vdec_strm_config_t)
     unsigned int    mtuTile;                //!< relative with PFU TILE burst length, set 0 as default;
     unsigned int    mtuDisp;                //!< relative with PFU display burst length, set 0 as default;
     unsigned int    fetch_collect;          //!< if set, will use this to configure VCU: default is 0, can try 3;
-    unsigned int    max_support_layer;      //!< [H265 only]: the supported maximum temporal layers: starting from 1.
+    unsigned int    max_support_layer;      //!< [H265 and VVC only]: the supported maximum spatial(bits[15:8]) and temporal(bits[7:0]) layer(s): starting from 1.
     unsigned int    buf_combined_mode;      //!< 0: separate dis & ref buffer, 1: combine dis & ref buffer
     unsigned int    enable_deinterlace;     //!< 0: disable 1: enable deinterlace for interlaced stream (only for g1 H264)
-    unsigned int    vp8_strm_mode;          //!< VP8 input stream mode: 0: raw stream 1: ivf file 2: ES data, VP9: 0: ivf file 1: raw stream 2: ES data, AV1: 0: annexb 1: non-annexb 2: large scale tile
+    unsigned int    vp8_strm_mode;          //!< [AV1 only]: 0: annexb, 1: non-annexb, 2: large scale tile
     unsigned int    dis_offset_uv;          //!< UV offset in display buffer of 420SP mode; or U offset in display buffer of 420P mode;
     unsigned int    dis_offset_uv1;         //!< V offset in display buffer of 420P mode;
     unsigned int    mtr_enable;             //!< MTR can only be enabled from BG4CDPA0;
@@ -536,8 +535,14 @@ TYPEDEF_STRUCT(vdec_strm_config_t)
     unsigned int    qos_r_high;             //!< high Qos for read
     unsigned int    qos_r_low;              //!< low Qos for read
 
-    unsigned int    h265_tile_opt;          //!< flag for h265 multi-tile opt
-    unsigned int    h264_low_latency_output; //!< Obsolete, for backward compatibility only
+    unsigned char   h265_tile_opt;          //!< flag for h265 multi-tile opt
+    unsigned char   h264_low_latency_output; //!< Obsolete, for backward compatibility only
+    unsigned char   reserved5;              //!< Reserved.
+    unsigned char   reserved6;              //!< Reserved.
+    unsigned char   reserved7;              //!< Reserved.
+    unsigned char   disable_gdr;            //!< 1: treat GDR frame as non-GDR frame.
+    unsigned char   operating_point;        //!< Which operating point is selected.
+    unsigned char   config_mode;            //!< 0: configure stream only; 1: configure stream + recalculate buffer size;
 
     unsigned int    mmu_enable;             //!< refer to enum {VXG_MMU_xxx, }
     unsigned char   mmu_page_size;          //!< 0~5: 4K | 16K | 64K | 256K | 1M | 2M
@@ -546,11 +551,11 @@ TYPEDEF_STRUCT(vdec_strm_config_t)
     unsigned int    error_pic_threshold;    //!< [v2g only]: error mbs threshold for a picture to drop it: starting from 1.
     unsigned int    av1_lgst_param;         //!< av1 large scale tile parameters
     unsigned char   shuffle_en;             //!< enable address shuffle
-    unsigned char   fast_channel_zapping;   //!< To reduce the channel zapping time by outputting the first decoded frame immediately.
+    unsigned char   fast_channel_zapping;   //!< Reduce the channel zapping time by releasing the first decoded frame immediately.
     unsigned char   mtu_dhub;               //!< MTU for the PFU output channel and VCU input channel in dHub. 0: default, 1~10: 8B | 16B | 32B | 64B | 128B | 256B | 512B | 1024B | 2048B | 4096B
-    unsigned char   fast_mode;              //!< FW recycles the reference buffers and display buffers by itself. 0: off, 1: on
+    unsigned char   fast_mode;              //!< FW recycles the reference and display buffers internally. 0: off, 1: on
     unsigned char   mtr_force_uncmpr;       //!< 1: force all the pixel data in frame buffer to be uncompressed
-    unsigned char   non_tunnel;             //!< Display buffers are allocated by APP(1) or not(0).
+    unsigned char   overallocation_mode;    //!< When overallocation enabled, 0: over-allocate reference and display buffers; 1: over-allocate reference buffers only; 2: over-allocate display buffers only.
     unsigned char   super_mode;             //!< Notify the buffer management events only. 0: off, 1: on
     unsigned char   qos_mmu;                //!< Qos for MMU
     unsigned int    wdt_cnt;                //!< Watchdog timer's counter value [1..0xffffff]. -1=disable, 0=default(0x1fffff)
@@ -593,9 +598,12 @@ TYPEDEF_STRUCT(vdec_seq_desc_t)
     short           dis_left;               //!< Horizontal offset (in pixels) of the display window relative to the coded picture.
     short           dis_top;                //!< Vertical offset (in pixels) of the display window relative to the coded picture.
 
+    unsigned short  dbuf_width;             //!< Width (in bytes) of the display frame buffer for LUMA.
+    unsigned short  dbuf_height;            //!< Height (in bytes) of the display frame buffer for LUMA.
+
     unsigned int    level_idc;              //!< level
     unsigned int    profile_idc;            //!< profile
-    unsigned int    max_reorder_frames;     //!< max of the reorder frames.
+    unsigned int    max_reorder_frames;     //!< maximum of the reorder frames
     unsigned int    poc_type;               //!< pic_order_cnt_type
 
     // for jpeg only
@@ -610,16 +618,19 @@ TYPEDEF_STRUCT(vdec_seq_desc_t)
     unsigned int    total_mbs_in_pic;       //!< mb number in a picture
     unsigned int    outputFormat;           //!< format of the output picture
 
-    unsigned int    bit_depth;              //!< decoded bit depth of the stream, 8bit or 10bit etc.
-    unsigned int    max_temporal_layer;     //!< maximum temporal scaling layer
+    unsigned int    bit_depth;              //!< decoded bit depth of the stream, 8bit or 10bit
+    unsigned int    max_spatial_layer;      //!< maximum spatial scaling layer(s)
+    unsigned int    max_temporal_layer;     //!< maximum temporal scaling layer(s)
 
-    unsigned int    color_primaries;        //!< hevc & avc vui information
-    unsigned int    transfer_characteristics; //!< hevc & avc vui information
-    unsigned int    matrix_coeffs;          //!< hevc & avc vui information
-    unsigned int    video_full_range_flag;  //!< hevc & avc vui information
+    unsigned int    color_primaries;        //!< vui information
+    unsigned int    transfer_characteristics; //!< vui information
+    unsigned int    matrix_coeffs;          //!< vui information
+    unsigned int    video_full_range_flag;  //!< vui information
 
     // for av1 only
-    unsigned char   film_grain_params_present; //!< Whether the film grain parameters are present(1) or not(0).
+    unsigned char   film_grain_params_present; //!< Film grain parameters are present(1) or not(0).
+    unsigned char   operating_points_cnt;   //!< Number of operating points.
+    void           *operating_point_level;  //!< Levels that each operating point conforms to.
 
     unsigned short  num_tiles;              //!< Number of TILEs in a frame.
 };
@@ -708,9 +719,12 @@ TYPEDEF_STRUCT(vdec_pic_desc_t)
     unsigned int    rotate_mode;            //!< 0: original, 1: 90 degree, 2: 180 degree, 3: 270 degree, 4: horizontal flip, 5, vertical flip
     unsigned int    dis_offset_r;           //!< Offset (in bytes) of valid data in a display frame buffer for rotation
     unsigned int    dis_stride_r;           //!< Stride (in bytes) of the display frame buffer for rotation
-    unsigned int    temporal_layer;         //!< [H265 only] temporal layer of this picture, starting from 1;
-    unsigned int    pts_low;                //!< PTS bit0~bit31
-    unsigned char   pts_high;               //!< PTS bit32
+    unsigned char   layer_id;               //!< Spatial layer ID.
+    unsigned char   temporal_id;            //!< Temporal layer ID.
+    unsigned char   reserved3;              //!< Reserved.
+    unsigned char   reserved4;              //!< Reserved.
+    unsigned int    pts_low;                //!< PTS bit0 ~ bit31
+    unsigned int    pts_high;               //!< PTS bit32
 
     // for channel 0
     unsigned int    is_compressed;          //!< whether the current buffer is in compressed format
@@ -763,7 +777,7 @@ TYPEDEF_STRUCT(vdec_pic_desc_t)
     void           *rbuf_to_show;           //!< store rbuf as external reference, can be current or existing rbuf
 
     // for av1 only
-    void           *film_grain_params;      //!< Pointer to the film grain parameters.
+    void           *film_grain_params;      //!< Pointer to film grain parameters.
 };
 
 //---------------------------------------------------------------------------
@@ -829,8 +843,8 @@ TYPEDEF_STRUCT(vdec_strm_buf_desc_t)
     unsigned int    pos;                    //!< Reserved. For video decoder internal use only.
     void           *rsvd4;                  //!< Reserved. For video decoder internal use only.
     unsigned int    flags;                  //!< Reserved. For video decoder internal use only.
-    unsigned int    pts_low;                //!< PTS bit0~bit31
-    unsigned char   pts_high;               //!< PTS bit32
+    unsigned int    pts_low;                //!< PTS bit0 ~ bit31
+    unsigned int    pts_high;               //!< PTS bit32
 
     // Output
     unsigned int    curr_addr;              //!< Physical address of the current stream buffer.
@@ -948,6 +962,7 @@ int   vdec_close                     (void *vdec_cntxt);                        
 
 int   vdec_open_stream               (void *strm_cntxt, vdec_strm_config_t *strm_config);
 int   vdec_configure_stream          (void *strm_cntxt, vdec_strm_config_t *strm_config);
+int   vdec_flush_stream              (void *strm_cntxt, unsigned int flush_sbuf);
 int   vdec_close_stream              (void *strm_cntxt);
 int   vdec_switch_stream             (void *strm_cntxt, void *next_strm_cntxt);
 int   vdec_stream_switch_out         (void *strm_cntxt);
@@ -1005,7 +1020,7 @@ TYPEDEF_STRUCT(venc_strm_config_t)
                                             //   else use this flag to indicate whether the coded frames are interlaced (in displaying).
     unsigned int    mbaff_enable;           //!< Enable mbaff
     unsigned int    disable_deblocking;     //!< Disable deblocking flag
-    unsigned int    poc_type;               //!< Setting picture order count type: 0,2 supportted 1 unsupportted
+    unsigned int    poc_type;               //!< Setting picture order count type: 0,2 supported 1 unsupported
     unsigned int    entropy_mode;           //!< 0: cavlc, 1: cabac
     unsigned int    transform_8x8_flag;     //!< Enable 8x8 transform flag
     unsigned int    ref_num_in_buf;         //!< Reference buffer count. For H1, 2~4.
@@ -1015,7 +1030,7 @@ TYPEDEF_STRUCT(venc_strm_config_t)
     unsigned int    profile_idc;            //!< H.264/mpeg2/mpeg4/vc1 profile
     unsigned int    level_idc;              //!< H.264 level
     unsigned int    yuv_downsample;         //!< 0: orig; 1: x direction 1/2 ds; 2: y direction 1/2 ds; 3: x,y direction 1/2 ds
-    unsigned int    vp8_strm_mode;          //!< VP8 output stream mode: 0: RAW Stream 1: ivf file 2: ES data
+    unsigned int    vp8_strm_mode;          //!< VP8 output stream mode: 0: RAW stream 1: IVF file 2: ES data
     unsigned int    vp8_mvprob_mode;        //!< 0: don't update vp8 mv prob table; 1: update mv prob table. BG2-CT ECO version support this feature
     unsigned int    vp8_multi_channel;      //!< VP8 multi channel mode: 0: normal mode 1: multi channel, output 3 bitstream: 1, 1/2, 1/4
 
@@ -1156,7 +1171,7 @@ TYPEDEF_STRUCT(venc_strm_config_t)
     unsigned int    motion_y;               //!< Motion detection start location in vertical direction
     unsigned int    motion_w;               //!< Motion detection width
     unsigned int    motion_h;               //!< Motion detection height
-    unsigned int    vp9_strm_mode;          //!< VP9 output stream mode: 0: RAW Stream 1: ivf file 2: ES data
+    unsigned int    vp9_strm_mode;          //!< VP9 output stream mode: 0: RAW stream 1: IVF file 2: ES data
     unsigned int    compressor;             //!< Enable/Disable Embedded Compression:
                                             //   0 = Disable Compression
                                             //   1 = Only Enable Luma Compression

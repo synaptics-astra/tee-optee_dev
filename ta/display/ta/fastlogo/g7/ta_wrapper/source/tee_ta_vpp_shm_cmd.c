@@ -194,7 +194,8 @@ int MV_VPPOBJ_BindSHM(TEE_Param params[4])
            shmAddr = (UINT8 *)params[1].memref.buffer;
            Size = params[1].memref.size;
            INT8 *config;
-           int plane_size=0;
+           int plane_size;
+           int vout_size;
 #ifdef CONFIG_VPP_FASTLOGO_VALIDATE_INPUT
            VPP_INIT_SHM_BUFFER_DESC(bufDesc, (void*)shmAddr, Size, VPP_SHM_BUFFER_TYPE_INPUT);
            res = VPP_ValidateInput(&bufDesc, 0);
@@ -203,8 +204,10 @@ int MV_VPPOBJ_BindSHM(TEE_Param params[4])
 #endif //CONFIG_VPP_FASTLOGO_VALIDATE_INPUT
            config = (INT8 *)shmAddr;
            plane_size = (sizeof(INT32)*(MAX_NUM_PLANES));
+           vout_size = sizeof(INT32)* (MAX_NUM_VOUTS);
            params[2].value.a = MV_VPPOBJ_Config(0, (const int *) &config[0], (const int *) &config[(plane_size)],
-                           (const int *) &config[(plane_size*2)], (const int *) &config[(plane_size*3)]);
+                           (const int *) &config[(plane_size*2)], (const int *) &config[(plane_size*3)],
+                           (const int *) &config[(plane_size*3) + vout_size]);
        }
     break;
 
@@ -245,7 +248,7 @@ int MV_VPPOBJ_BindSHM(TEE_Param params[4])
         shmAddr = (UINT8 *)params[1].memref.buffer;
         Size = params[1].memref.size;
 
-        VPP_INIT_SHM_BUFFER_DESC(bufDesc, (void*)shmAddr, Size, VPP_SHM_BUFFER_TYPE_INPUT);
+        VPP_INIT_SHM_BUFFER_DESC(bufDesc, (void*)shmAddr, Size, VPP_SHM_BUFFER_TYPE_OUTPUT);
         res = VPP_ValidateInput(&bufDesc, 0);
         if(res != TEE_SUCCESS)
             break;
@@ -512,7 +515,8 @@ int MV_VPPOBJ_BindSHM_PHY(TEE_Param params[4])
            shmAddr = (UINT8 *)params[1].memref.buffer;
            Size = params[1].memref.size;
            INT8 *config;
-           int plane_size=0;
+           int plane_size;
+           int vout_size;
        #ifdef CONFIG_VPP_FASTLOGO_VALIDATE_INPUT
            res = VPP_ValidateInput(shmAddr, Size, 0);
            if(res != TEE_SUCCESS)
@@ -520,8 +524,10 @@ int MV_VPPOBJ_BindSHM_PHY(TEE_Param params[4])
        #endif //CONFIG_VPP_FASTLOGO_VALIDATE_INPUT
            config = (INT8 *)shmAddr;
            plane_size = (sizeof(INT32)*(MAX_NUM_PLANES));
+           vout_size = sizeof(INT32)* (MAX_NUM_VOUTS);
            params[2].value.a = MV_VPPOBJ_Config(0, (const int *) &config[0], (const int *) &config[(plane_size)],
-                          (const int *) &config[(plane_size*2)], (const int *) &config[(plane_size*3)]);
+                          (const int *) &config[(plane_size*2)], (const int *) &config[(plane_size*3)],
+                          (const int *) &config[(plane_size*3) + vout_size]);
        }
     break;
 

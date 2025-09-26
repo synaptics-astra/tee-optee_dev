@@ -719,10 +719,11 @@ UNSG32  dhub_channel_cfg(
         SIGN32  QoS,        /*See 'dHubChannel.CFG.QoS' */
         SIGN32  selfLoop,   /*See 'dHubChannel.CFG.selfLoop' */
         SIGN32  enable,     /*0 to disable, 1 to enable */
-        T64b    cfgQ[]      /*Pass NULL to directly init dHub, or
+        T64b    cfgQ[],     /*Pass NULL to directly init dHub, or
                     Pass non-zero to receive programming sequence
                     in (adr,data) pairs
                     */
+        UNSG32 chanInit /* 1 - H/W init Channel, 0 - S/W init channel */
         )
 {
     HDL_dhub            *dhub = (HDL_dhub*)hdl;
@@ -730,29 +731,6 @@ UNSG32  dhub_channel_cfg(
     T32dHubChannel_CFG  cfg;
     UNSG32 i = 0, a,cmdID = dhub_id2hbo_cmdQ(id), dataID = dhub_id2hbo_data(id);
 
-    xdbg ("hal_dhub::  value of id is %0d \n" , id ) ;
-    xdbg ("hal_dhub::  value of baseCmd   is %0d \n" , baseCmd ) ;
-    xdbg ("hal_dhub::  value of baseData  is %0d \n" , baseData ) ;
-    xdbg ("hal_dhub::  value of depthCmd  is %0d \n" , depthCmd ) ;
-    xdbg ("hal_dhub::  value of depthData is %0d \n" , depthData ) ;
-    xdbg ("hal_dhub::  value of MTU       is %0d \n" , MTU ) ;
-    xdbg ("hal_dhub::  value of QOS       is %0d \n" , QoS ) ;
-    xdbg ("hal_dhub::  value of SelfLoop  is %0d \n" , selfLoop ) ;
-    xdbg ("hal_dhub::  value of Enable    is %0d \n" , enable ) ;
-
-    if (!cfgQ) {
-        hbo_queue_enable(hbo,  cmdID, 0, NULL);
-        hbo_queue_clear(hbo,  cmdID);
-        hbo_queue_enable(hbo, dataID, 0, NULL);
-        hbo_queue_clear(hbo, dataID);
-        //if(bTST(busyStatus, cmdID) || bTST(busyStatus, dataID))
-        //  return 0;
-                        }
-    a = dhub->ra + RA_dHubReg_ARR + id*sizeof(SIE_dHubChannel);
-    xdbg ("hal_dhub::  value of Channel Addr    is %0x \n" , a ) ;
-    IO32CFG(cfgQ, i, a + RA_dHubChannel_START, 0);
-
-    cfg.u32 = 0; cfg.uCFG_MTU = MTU; cfg.uCFG_QoS = QoS; cfg.uCFG_selfLoop = selfLoop;
     switch (MTU) {
         case dHubChannel_CFG_MTU_8byte  : dhub->MTUb[id] = 3; break;
         case dHubChannel_CFG_MTU_32byte : dhub->MTUb[id] = 5; break;
@@ -769,18 +747,44 @@ UNSG32  dhub_channel_cfg(
 #ifdef dHubChannel_CFG_MTU_4096byte
         case dHubChannel_CFG_MTU_4096byte : dhub->MTUb[id] = 12; break;
 #endif
-                        }
-    xdbg ("hal_dhub::  addr of ChannelCFG is %0x data is %0x \n",
-                a + RA_dHubChannel_CFG , cfg.u32  ) ;
-    IO32CFG(cfgQ, i, a + RA_dHubChannel_CFG, cfg.u32);
+     }
 
-    i += hbo_queue_cfg(hbo,  cmdID, baseCmd , depthCmd,
-                enable, cfgQ ? (cfgQ + i) : NULL);
-    i += hbo_queue_cfg(hbo, dataID, baseData, depthData,
-                enable, cfgQ ? (cfgQ + i) : NULL);
-    xdbg ("hal_dhub::  addr of ChannelEN is %0x data is %0x \n" ,
-                a + RA_dHubChannel_START , enable  ) ;
-    IO32CFG(cfgQ, i, a + RA_dHubChannel_START, enable);
+    if (chanInit) {
+        xdbg ("hal_dhub::  value of id is %0d \n" , id ) ;
+        xdbg ("hal_dhub::  value of baseCmd   is %0d \n" , baseCmd ) ;
+        xdbg ("hal_dhub::  value of baseData  is %0d \n" , baseData ) ;
+        xdbg ("hal_dhub::  value of depthCmd  is %0d \n" , depthCmd ) ;
+        xdbg ("hal_dhub::  value of depthData is %0d \n" , depthData ) ;
+        xdbg ("hal_dhub::  value of MTU       is %0d \n" , MTU ) ;
+        xdbg ("hal_dhub::  value of QOS       is %0d \n" , QoS ) ;
+        xdbg ("hal_dhub::  value of SelfLoop  is %0d \n" , selfLoop ) ;
+        xdbg ("hal_dhub::  value of Enable    is %0d \n" , enable ) ;
+
+        if (!cfgQ) {
+            hbo_queue_enable(hbo,  cmdID, 0, NULL);
+            hbo_queue_clear(hbo,  cmdID);
+            hbo_queue_enable(hbo, dataID, 0, NULL);
+            hbo_queue_clear(hbo, dataID);
+            //if(bTST(busyStatus, cmdID) || bTST(busyStatus, dataID))
+            //  return 0;
+        }
+        a = dhub->ra + RA_dHubReg_ARR + id*sizeof(SIE_dHubChannel);
+        xdbg ("hal_dhub::  value of Channel Addr    is %0x \n" , a ) ;
+        IO32CFG(cfgQ, i, a + RA_dHubChannel_START, 0);
+
+        cfg.u32 = 0; cfg.uCFG_MTU = MTU; cfg.uCFG_QoS = QoS; cfg.uCFG_selfLoop = selfLoop;
+        xdbg ("hal_dhub::  addr of ChannelCFG is %0x data is %0x \n",
+                    a + RA_dHubChannel_CFG , cfg.u32  ) ;
+        IO32CFG(cfgQ, i, a + RA_dHubChannel_CFG, cfg.u32);
+
+        i += hbo_queue_cfg(hbo,  cmdID, baseCmd , depthCmd,
+                    enable, cfgQ ? (cfgQ + i) : NULL);
+        i += hbo_queue_cfg(hbo, dataID, baseData, depthData,
+                    enable, cfgQ ? (cfgQ + i) : NULL);
+        xdbg ("hal_dhub::  addr of ChannelEN is %0x data is %0x \n" ,
+                    a + RA_dHubChannel_START , enable  ) ;
+        IO32CFG(cfgQ, i, a + RA_dHubChannel_START, enable);
+    }
 
     return i;
     /** ENDOFFUNCTION: dhub_channel_cfg **/

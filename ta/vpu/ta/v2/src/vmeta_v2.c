@@ -192,6 +192,8 @@ struct i_vpu_ctx {
      */
     struct queue_fifo_p sink_bufs;
 
+    /* v4g decoder mtr buf based */
+    struct syna_tz_generic_buf mtr_buf;
     /* whether this instance is a secure context */
     bool secure;
     bool is_encoder;
@@ -337,12 +339,14 @@ static int inline release_internal_ctx(VPU_SESSION_CTX *session,
                                        struct syna_vpu_ctrl *ctrl,
                                        struct i_vpu_ctx **ctx)
 {
-    *ctx = (struct i_vpu_ctx *) vpuObjMgrRelease(session->objMgr, (void *)((uintptr_t)ctrl->ctrl_buf.addr));
+    *ctx = (struct i_vpu_ctx *) vpuObjMgrRelease(session->objMgr,
+                                                 (void *)((uintptr_t)
+                                                 ctrl->ctrl_buf.addr));
     if (!(*ctx))
         return TEE_ERROR_ITEM_NOT_FOUND;
 
     if (*ctx == (struct i_vpu_ctx *)(ctrl->ctx_buf.vaddr + ctrl->ctx_buf.offset))
-            return 0;
+        return 0;
 
     /* memory corrupted */
     return TEE_ERROR_CORRUPT_OBJECT;
@@ -352,12 +356,14 @@ static int inline get_internal_ctx(VPU_SESSION_CTX *session,
                                    struct syna_vpu_ctrl *ctrl,
                                    struct i_vpu_ctx **ctx)
 {
-    *ctx = (struct i_vpu_ctx *) vpuObjMgrGet(session->objMgr, (void *)((uintptr_t)ctrl->ctrl_buf.addr));
+    *ctx = (struct i_vpu_ctx *) vpuObjMgrGet(session->objMgr,
+                                             (void *)((uintptr_t)
+                                             ctrl->ctrl_buf.addr));
     if (!(*ctx))
         return TEE_ERROR_ITEM_NOT_FOUND;
 
     if (*ctx == (struct i_vpu_ctx *)(ctrl->ctx_buf.vaddr + ctrl->ctx_buf.offset))
-            return 0;
+        return 0;
 
     /* memory corrupted */
     return TEE_ERROR_CORRUPT_OBJECT;
@@ -827,14 +833,10 @@ static TEE_Result ta_vdec_config_stream(VPU_SESSION_CTX * session_ctx,
     pStrmcfg = (struct vdec_strm_config_t *)params[1].memref.buffer;
     size = params[1].memref.size;
     if (size != getBufSize(eVdecStrmCfgSize)) {
-        VMETA_LOGE("invalid param, size=%d, getBufSize(eVencStrmCfgSize)=%d\n", size, getBufSize(eVdecStrmCfgSize));
+        VMETA_LOGE("invalid param, size=%d, getBufSize(eVencStrmCfgSize)=%d\n",
+                   size, getBufSize(eVdecStrmCfgSize));
         ret = TEE_ERROR_BAD_PARAMETERS;
         goto bail;
-    }
-
-    if (IS_TILE_OUTPUT_CFG(pStrmcfg)) {
-        pStrmcfg->mtuTile = 6;
-        pStrmcfg->mtuDisp = 6;
     }
 
     pStrmcfg->mmu_enable = 0;
@@ -865,14 +867,21 @@ static TEE_Result ta_vdec_config_stream(VPU_SESSION_CTX * session_ctx,
     }
 
     if (pStrmcfg->mtr_enable) {
-        ctrl->mtr_base.gfp_flags |= BERLIN_GFP_FLAG_NO_MAPPING;
-        ret = vpu_tzmem_get(&ctrl->mtr_base);
-        if (ret) {
-            VMETA_LOGF("can't register mtr base pool");
-            goto bail;
+        if (ctrl->mtr_base.memid || ctrl->mtr_base.addr) {
+            TEE_MemMove(&(ctx->mtr_buf), &ctrl->mtr_base,
+                        sizeof(struct syna_tz_generic_buf));
+
+            ctx->mtr_buf.gfp_flags |= BERLIN_GFP_FLAG_NO_MAPPING;
+            ret = vpu_tzmem_get(&ctx->mtr_buf);
+            if (ret) {
+                VMETA_LOGF("can't register mtr base pool");
+                goto bail;
+            }
+            pStrmcfg->mtr_meta_base = ctx->mtr_buf.addr
+                                         + ctx->mtr_buf.offset;
+        } else {
+            pStrmcfg->mtr_meta_base = 0UL;
         }
-        pStrmcfg->mtr_meta_base = ctrl->mtr_base.addr
-                                     + ctrl->mtr_base.offset;
     }
 
     ctx->fw_pixel_mode = pStrmcfg->output_mode;
@@ -1672,7 +1681,7 @@ static TEE_Result ta_vdec_decode_stream(VPU_SESSION_CTX * session_ctx,
                 && vdec_check_new_seq(ctx, ctrl, fw_status->seq_desc))
             {
                 /* CA may re-alloc here, release the interanl ref */
-                vpu_tzmem_put(&ctrl->mtr_base);
+                vpu_tzmem_put(&ctx->mtr_buf);
 
                 ret = vdec_update_seq(ctrl, fw_status->seq_desc);
 
@@ -1812,6 +1821,91 @@ bail:
     return TEE_SUCCESS;
 }
 
+static TEE_Result ta_vdec_drain_pool(VPU_SESSION_CTX * session_ctx,
+        uint32_t parameters_type, TEE_Param params[4])
+{
+    struct syna_vpu_ctrl *ctrl;
+    struct i_vpu_ctx *ctx;
+    int ret;
+
+    ctrl = (struct syna_vpu_ctrl *)params[0].memref.buffer;
+
+    ret = get_internal_ctx(session_ctx, ctrl, &ctx);
+    if (ret) {
+        VMETA_LOGE("Failed to get pVDCtx");
+        ret = TEE_ERROR_CORRUPT_OBJECT;
+        goto bail;
+    }
+
+    switch(params[1].value.a) {
+    case SYNA_VPU_FW_VDEC_STRM:
+        ret = vdec_flush_stream(ctx->strm_ctx, 1U);
+        if (ret) {
+            VMETA_LOGE("vdec failed to drain ES: 0x%08x",
+                       ret);
+            goto bail;
+        }
+
+        ret = vdec_loop_pop_es_buf(ctrl, ctx);
+        if (ret != TEE_ERROR_NO_DATA && ret) {
+            VMETA_LOGE("vdec pop es buf failed: 0x%08x(%d done)",
+                       ret, ctrl->sbuf.pop);
+            goto bail;
+        }
+
+        queue_fifo_p_init(&ctx->sink_bufs);
+
+        ret = vdec_loop_pop_ref_buf(ctrl, ctx);
+        if (ret != TEE_ERROR_NO_DATA && ret) {
+            VMETA_LOGE("vdec pop ref buf failed: 0x%08x(%d done)",
+                       ret, ctrl->rbuf.pop);
+            goto bail;
+        }
+
+        ret = vdec_loop_pop_disp_buf(ctrl, ctx);
+        if (ret != TEE_ERROR_NO_DATA && ret) {
+            VMETA_LOGE("vdec pop disp buf failed: 0x%08x(%d done)",
+                       ret, ctrl->dbuf.pop);
+            goto bail;
+        }
+
+        ret = vpu_tzmem_put(&ctx->mtr_buf);
+
+        break;
+    case SYNA_VPU_FW_VDEC_REF:
+    case SYNA_VPU_FW_VDEC_DISP:
+        ret = vdec_flush_stream(ctx->strm_ctx, 0U);
+        if (ret) {
+            VMETA_LOGE("vdec failed to drain ref & disp: 0x%08x",
+                       ret);
+            goto bail;
+        }
+
+        ret = vdec_loop_pop_ref_buf(ctrl, ctx);
+        if (ret != TEE_ERROR_NO_DATA && ret) {
+            VMETA_LOGE("vdec pop ref buf failed: 0x%08x(%d done)",
+                       ret, ctrl->rbuf.pop);
+            goto bail;
+        }
+
+        ret = vdec_loop_pop_disp_buf(ctrl, ctx);
+        if (ret != TEE_ERROR_NO_DATA && ret) {
+            VMETA_LOGE("vdec pop disp buf failed: 0x%08x(%d done)",
+                       ret, ctrl->dbuf.pop);
+            goto bail;
+        }
+
+        ret = vpu_tzmem_put(&ctx->mtr_buf);
+
+        break;
+    }
+
+bail:
+    params[2].value.a = ret;
+    return TEE_SUCCESS;
+}
+
+
 static TEE_Result ta_vdec_int_timeout(VPU_SESSION_CTX * session_ctx,
                                       uint32_t parameters_type,
                                       TEE_Param params[4])
@@ -1889,7 +1983,8 @@ static TEE_Result ta_vdec_reset_instance(VPU_SESSION_CTX * session_ctx,
         goto failed;
     }
     queue_fifo_p_init(&ctx->sink_bufs);
-    ret = 0;
+
+    ret = vpu_tzmem_put(&ctx->mtr_buf);
 
 failed:
     params[1].value.a = ret;
@@ -2023,7 +2118,12 @@ static TEE_Result ta_vdec_destroy_context(VPU_SESSION_CTX * session_ctx,
         goto bail;
     }
 
-    ret = vpu_tzmem_put(&ctrl->mtr_base);
+    /**
+     * NOTE: we should drop this ref to mtr buf in ta_vdec_reset_instance(),
+     * if we can ensure that would be called and mtr buf is not assigned
+     * (likes ta_vdec_config_stream()), we can remove it here.
+     */
+    ret = vpu_tzmem_put(&ctx->mtr_buf);
     if (ret)
         goto bail;
 
@@ -3163,6 +3263,18 @@ static const TA_CMD_HANDLER ta_cmd_handler[] =
         }
     },
     {
+        VDEC_DRAIN_POOL_V2,
+        ta_vdec_drain_pool,
+        TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT, TEE_PARAM_TYPE_VALUE_INPUT,
+                        TEE_PARAM_TYPE_VALUE_OUTPUT, TEE_PARAM_TYPE_NONE),
+        3,
+        {
+            {eOutput, TEE_NONSECURE, TEE_MT_COPY, eSynaVpuCtrlSize},
+            {eNum},
+            {eNum},
+        }
+    },
+    {
         VDEC_ABORT_HW_V2,
         ta_vdec_int_timeout,
         TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INOUT, TEE_PARAM_TYPE_VALUE_OUTPUT,
@@ -3347,6 +3459,7 @@ static const char *showVmetaCmd(uint32_t cmd) {
     GET_ENUM_NAME(VDEC_PUSH_BUFFER_V2);
     GET_ENUM_NAME(VDEC_POP_BUFFER_V2);
     GET_ENUM_NAME(VDEC_DECODE_STREAM_V2);
+    GET_ENUM_NAME(VDEC_DRAIN_POOL_V2);
     GET_ENUM_NAME(VDEC_ABORT_HW_V2);
     GET_ENUM_NAME(VDEC_RESET_INSTANCE_V2);
     GET_ENUM_NAME(VDEC_STREAM_SWITCH_IN_V2);

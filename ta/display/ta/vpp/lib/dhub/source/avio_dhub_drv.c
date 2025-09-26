@@ -61,12 +61,13 @@ int getDhubChannelInfo(HDL_dhub2d *pdhubHandle, SIGN32 IChannel, T32dHubChannel_
  *    Return:        void
 ******************************************************************************************************************/
 void DhubInitialization(SIGN32 cpuId, UNSG32 dHubBaseAddr, UNSG32 hboSramAddr,
-            HDL_dhub2d *pdhubHandle, DHUB_channel_config *dhub_config,SIGN32 numOfChans)
+            HDL_dhub2d *pdhubHandle, DHUB_channel_config *dhub_config,SIGN32 numOfChans, UNSG32 channelInitMask)
 {
     HDL_semaphore *pSemHandle;
     SIGN32 i;
     SIGN32 chanId;
     SIGN32 cmdDiv = 8;
+    UNSG32 chanInit;
 
     cmdDiv = getDhubCMDDiv(pdhubHandle);
     if (!cmdDiv) {
@@ -88,6 +89,7 @@ void DhubInitialization(SIGN32 cpuId, UNSG32 dHubBaseAddr, UNSG32 hboSramAddr,
         //note that in this function, it also configured right HBO channels(cmdQ and dataQ) and semaphores
         chanId = dhub_config[i].chanId;
         AVIO_DHUB_INITCHANNELAXQOS(pdhubHandle, dhub_config, chanId, i, 0);
+        chanInit = (channelInitMask & (1 << chanId)) ? 1 : 0;
         dhub_channel_cfg(
                 &pdhubHandle->dhub,					/*!	Handle to HDL_dhub !*/
                 chanId,						/*!	Channel ID in $dHubReg !*/
@@ -99,11 +101,17 @@ void DhubInitialization(SIGN32 cpuId, UNSG32 dHubBaseAddr, UNSG32 hboSramAddr,
                 dhub_config[i].chanQos,								/*!	See 'dHubChannel.CFG.QoS' !*/
                 dhub_config[i].chanSelfLoop,								/*!	See 'dHubChannel.CFG.selfLoop' !*/
                 dhub_config[i].chanEnable,								/*!	0 to disable, 1 to enable !*/
-                0								/*!	Pass NULL to directly init dHub, or
+                0,								/*!	Pass NULL to directly init dHub, or
                                                   Pass non-zero to receive programming sequence
                                                   in (adr,data) pairs
                                                   !*/
+                chanInit
                 );
+
+        //Continue, no further initialization is required
+        if (!chanInit)
+            continue;
+
         // setup interrupt for channel chanId
         //configure the semaphore depth to be 1
         semaphore_cfg(pSemHandle, chanId, 1, 0);

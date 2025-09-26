@@ -48,7 +48,7 @@ extern DHUB_channel_config  VIP_config[];
  *             numOfChans     ----- number of channels
  *    Return:        void
 ******************************************************************************************************************/
-void DhubInitialization(SIGN32 cpuId, UNSG32 dHubBaseAddr, UNSG32 hboSramAddr, HDL_dhub2d *pdhubHandle, DHUB_channel_config *dhub_config,SIGN32 numOfChans);
+void DhubInitialization(SIGN32 cpuId, UNSG32 dHubBaseAddr, UNSG32 hboSramAddr, HDL_dhub2d *pdhubHandle, DHUB_channel_config *dhub_config,SIGN32 numOfChans, UNSG32 channelInitMask);
 
 void DhubEnableAutoPush(UNSG32 enable);
 

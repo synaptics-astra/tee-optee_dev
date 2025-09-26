@@ -32,6 +32,10 @@
 
 #define VPP_CIEL_TO_4K_ALIGN(val)   ((val+0xFFF)&(~0xFFF))
 
+#define VPP_FEATURE_HDMITX            (1<<0)
+#define VPP_FEATURE_MIPI_DSI          (1<<1)
+#define MAX_NUM_FEATURE_CFG           1
+
 #ifndef CONFIG_OPTEE
 extern const TEE_TA TAVPP;
 #endif

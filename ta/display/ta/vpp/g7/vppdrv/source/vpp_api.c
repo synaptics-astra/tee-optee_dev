@@ -1473,7 +1473,7 @@ int MV_VPPOBJ_Resume(int handle, BOOL optimize)
     for(i=FIRST_CPCB; i<MAX_NUM_VOUTS; i++)
         voutport_cfg[i] = vpp_sus->vout[i].dvID;
 
-    MV_VPPOBJ_Config(handle, vinport_cfg, dv_cfg, zorder_cfg, voutport_cfg);
+    MV_VPPOBJ_Config(handle, vinport_cfg, dv_cfg, zorder_cfg, voutport_cfg, vpp_sus->iVppFeatureCfg);
     VPP_BE_Resume(vpp_obj);
     VPP_BE_MIPI_DsiInit(vpp_obj);
 
@@ -1580,11 +1580,13 @@ int MV_VPPOBJ_Resume(int handle, BOOL optimize)
 
     /* 7. Resuming Hdmi  */
     /* TODO: confirm if MV_VPPOBJ_Resume or MV_VPPOBJ_Resume_Optimized is the final version used. Add vpp_sus support depending on that */
-    VPP_BE_SetHdmiPhyPower(vpp_obj, TRUE);
-    MV_VPPOBJ_SetHdmiVideoFmt(handle, pHdmiTx->videoParams.VideoFmt, pHdmiTx->videoParams.ColorDepth, pHdmiTx->videoParams.PixelRpt + 1);
-    //MV_VPPOBJ_SetHdmi3DStructure(handle, vpp_sus->hdmi3DStruct, vpp_sus->hdmi3DExt_data);
-    //MV_VPPOBJ_EnableHdmiAudioFmt(handle, ((HDMITX_AUD_CTRL *)(&vpp_sus->be.hdmiTxDrv.audCtrl))->AudEnable);
-    //MV_VPPOBJ_EnableHdmiAudioFmt(handle, ((HDMITX_AUD_CTRL *)(&vpp_sus->be.hdmiTxDrv.audCtrl))->AudEnable);
+    if (vpp_obj->iVppFeatureCfg[0] & VPP_FEATURE_HDMITX) {
+        VPP_BE_SetHdmiPhyPower(vpp_obj, TRUE);
+        MV_VPPOBJ_SetHdmiVideoFmt(handle, pHdmiTx->videoParams.VideoFmt, pHdmiTx->videoParams.ColorDepth, pHdmiTx->videoParams.PixelRpt + 1);
+        //MV_VPPOBJ_SetHdmi3DStructure(handle, vpp_sus->hdmi3DStruct, vpp_sus->hdmi3DExt_data);
+        //MV_VPPOBJ_EnableHdmiAudioFmt(handle, ((HDMITX_AUD_CTRL *)(&vpp_sus->be.hdmiTxDrv.audCtrl))->AudEnable);
+        //MV_VPPOBJ_EnableHdmiAudioFmt(handle, ((HDMITX_AUD_CTRL *)(&vpp_sus->be.hdmiTxDrv.audCtrl))->AudEnable);
+    }
 
 #ifdef XVYCC_SUPPORT
     MV_VPPOBJ_xvYCCEnable(handle, vpp_sus->xvYCC_enable);
@@ -1608,7 +1610,8 @@ int MV_VPPOBJ_Resume(int handle, BOOL optimize)
 #ifdef VPP_LINUXSDK_FORCE_SETHDMIFMT_AFTER_DELAY
     //LinuxSDK/VPP_Test_APP does not have application to force set resolution again, So try again here
     MV_OSAL_Task_Sleep(1600);
-    MV_VPPOBJ_SetHdmiVideoFmt(handle, pHdmiTx->videoParams.VideoFmt, pHdmiTx->videoParams.ColorDepth, pHdmiTx->videoParams.PixelRpt + 1);
+    if (vpp_obj->iVppFeatureCfg[0] & VPP_FEATURE_HDMITX)
+        MV_VPPOBJ_SetHdmiVideoFmt(handle, pHdmiTx->videoParams.VideoFmt, pHdmiTx->videoParams.ColorDepth, pHdmiTx->videoParams.PixelRpt + 1);
 #endif
     return (MV_VPP_OK);
 }
@@ -2076,7 +2079,7 @@ int MV_VPPOBJ_EnableBypassMode(int handle, int flag)
  * INPUT: NONE
  * RETURN: NONE
  **************************************/
-int MV_VPPOBJ_Config(int handle, const int *pvinport_cfg, const int *pdv_cfg, const int *pzorder_cfg, const int *pvoutport_cfg)
+int MV_VPPOBJ_Config(int handle, const int *pvinport_cfg, const int *pdv_cfg, const int *pzorder_cfg, const int *pvoutport_cfg, const int *pfeature_cfg)
 {
     int i, j;
     VPP_OBJ *vpp_obj;
@@ -2374,6 +2377,10 @@ int MV_VPPOBJ_Config(int handle, const int *pvinport_cfg, const int *pdv_cfg, co
     BCM_SCHED_SetMux(BCM_SCHED_Q1, 11); /* CPCB0 VDE -> Q1 */
     BCM_SCHED_SetMux(BCM_SCHED_Q3, 27); /* VOP2  FRST-> Q3 */
 
+    if(!(pfeature_cfg[0] & VPP_FEATURE_HDMITX))
+        VPP_BE_HdmiPowerDown(vpp_obj);
+
+    VPP_Memcpy(vpp_obj->iVppFeatureCfg, pfeature_cfg, sizeof(vpp_obj->iVppFeatureCfg));
     /* set VPP module to be configured */
     vpp_obj->status = STATUS_ACTIVE;
     return (MV_VPP_OK);
@@ -8824,6 +8831,12 @@ int MV_VPPOBJ_SetFormat(int handle, int cpcbID, VPP_DISP_OUT_PARAMS *pDispParams
 //##################################################
 //############### SetHdmiVideoFmt ##################
 //##################################################
+    if(!(vpp_obj->iVppFeatureCfg[0] & VPP_FEATURE_HDMITX))
+    {
+        VPPAPI_DBG_INFO("Skip VPP_BE_ConfigHdmiVideoFmt\n");
+        return (MV_VPP_OK);
+    }
+
     resID = VPP_GetResId(cpcbID);
 
     if (resID == RES_INVALID)

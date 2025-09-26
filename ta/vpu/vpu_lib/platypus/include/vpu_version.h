@@ -35,6 +35,6 @@
 #ifndef _VPU_VERSION_H_
 #define _VPU_VERSION_H_
 
-#define VPU_LIB_VERSION 34693
+#define VPU_LIB_VERSION 34790
 
 #endif

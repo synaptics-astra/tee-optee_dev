@@ -184,6 +184,7 @@ int MV_VPP_GetVppObjAddr(void)
 
 #ifdef VPP_ENABLE_FORCE_MAP_FOR_VIRT_ADDR
     force_memmap = 1;
+    g_vpp = NULL;
 #endif //VPP_ENABLE_FORCE_MAP_FOR_VIRT_ADDR
     instance_memmap = (VPP_TA_GetInstanceMapCount() < VPP_TA_GetInstanceNumber());
 
@@ -313,11 +314,20 @@ void MV_VPP_DeInitVppObj(void) {
         VPPAPI_DBG_FIELD("Failed to retrieve shm_memid from Global data (res=%ld / %lx) : %08x = %08lx\n",
                 res, res, VPP_PERSISTENCE_SHM_MEMID_KEY, mem_id);
     } else {
+#ifndef VPP_ENABLE_MEMID_BY_VIRT_ADDR
+        char *func_name="_FromAllInstances";
+#else
+        char *func_name="";
+#endif //VPP_ENABLE_MEMID_BY_VIRT_ADDR
         VPPAPI_DBG_INFO("TEE_Unregister_Memory/Unmap_Memory for mem-id : %08lx\n", mem_id);
+#ifndef VPP_ENABLE_MEMID_BY_VIRT_ADDR
         res = TEE_Unmap_Memory_FromAllInstances(mem_id);
+#else
+        res = TEE_Unmap_Memory(mem_id);
+#endif //VPP_ENABLE_MEMID_BY_VIRT_ADDR
         if (res != TEE_SUCCESS) {
-            VPPAPI_DBG_FIELD("TEE_Unmap_Memory_FromAllInstances failed for mem-id : %08lx, (res=%ld / %lx)\n",
-                mem_id, res, res);
+            VPPAPI_DBG_FIELD("TEE_Unmap_Memory%s failed for mem-id : %08lx, (res=%ld / %lx)\n",
+                func_name, mem_id, res, res);
         }
 
         res = TEE_Unregister_Memory(mem_id);

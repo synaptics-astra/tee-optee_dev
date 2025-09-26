@@ -111,6 +111,7 @@
 #define HDCP_KSV_BUFFER_SIZE               670
 #define RI_ERR_THRESHOLD                   2
 #define HDCP14_CORE_RESET_TIMEOUT          25
+#define HDMITX_SRAMPWR_OFF                 7
 
 /* ============================= STATIC FUNCTIONS ============================== */
 
@@ -2600,5 +2601,51 @@ INT BE_HDMITX_HDCP2XSetOpMode(BE_HDMITX_DATA *pHdmiTx, INT opMode)
 #else
     return MV_VPP_OK;
 #endif
+}
+
+void BE_HDMITX_SRAM_PowerOff(void)
+{
+#if HDCP2X_ENABLED
+    unsigned int addr = 0;
+
+    /* AVIO_MEMMAP_AVIO_SNPS_HDCP22_REG_BASE is mapped in tee_ta_vpp_memmap
+       to power down HDCP22 SRAM for Tx power off */
+    addr = MEMMAP_AVIO_REG_BASE+ AVIO_MEMMAP_AVIO_SNPS_HDCP22_REG_BASE +
+           RA_HDCP22_WRAP_AIC_SRAMPWR;
+    GA_REG_WORD32_WRITE(addr, HDMITX_SRAMPWR_OFF);
+
+    addr = MEMMAP_AVIO_REG_BASE+ AVIO_MEMMAP_AVIO_SNPS_HDCP22_REG_BASE +
+           RA_HDCP22_WRAP_TCM_SRAMPWR;
+    GA_REG_WORD32_WRITE(addr, HDMITX_SRAMPWR_OFF);
+
+    addr = HDMITX_WRAP_BASE + RA_HDMI_TX_WRAP_DPKMEM_SRAMPWR;
+    GA_REG_WORD32_WRITE(addr, HDMITX_SRAMPWR_OFF);
+
+    addr = HDMITX_WRAP_BASE + RA_HDMI_TX_WRAP_revoclist_SRAMPWR;
+    GA_REG_WORD32_WRITE(addr, HDMITX_SRAMPWR_OFF);
+#endif
+}
+
+INT BE_HDMITX_PowerOff(BE_HDMITX_DATA  *pHdmiTx)
+{
+#ifdef EARC_RX_ENABLED
+    T32HDMI_TX_WRAP_ARCRX_CTRL arcrx_ctrl;
+#endif //EARC_RX_ENABLED
+
+    /*SRAM powerdown*/
+    BE_HDMITX_SRAM_PowerOff();
+
+    /* PHY powerdown */
+    BE_HDMITX_phy_standby(pHdmiTx);
+
+#ifdef EARC_RX_ENABLED
+    /*ARC powerdown*/
+    GA_REG_WORD32_READ(HDMITX_SNPS_ARC_CTRL, &arcrx_ctrl.u32);
+    arcrx_ctrl.uARCRX_CTRL_arcrx_en = false;
+    arcrx_ctrl.uARCRX_CTRL_pwrdn = true;
+    GA_REG_WORD32_WRITE(HDMITX_SNPS_ARC_CTRL, arcrx_ctrl.u32);
+#endif //EARC_RX_ENABLED
+
+    return MV_VPP_OK;
 }
 #endif // _VPP_BE_HDMITX_C_

@@ -418,7 +418,6 @@ Func_Ret:
 
 }
 
-#ifndef CONFIG_OPTEE
 static TEE_Result Drm_OTPReadPublicItems(TEE_Param params[4])
 {
     TEE_Result result = TEE_ERROR_GENERIC;
@@ -430,10 +429,12 @@ static TEE_Result Drm_OTPReadPublicItems(TEE_Param params[4])
     DRM_TEE_SHM_HANDLE pbshmhandle = INVALID_SHM_HANDLE;
     PUBLIC_OTP_ITEMS pubOtp;
     UINT8 readByte = 0;
+#ifndef CONFIG_OPTEE
     UINT8 clrBuffer[256];
     UINT8 encBuffer[256];
     RSA *rsa;
     UINT32 rsa_ret;
+#endif
 
     buffer = (UINT8*)params[0].memref.buffer;
     size = params[0].memref.size;
@@ -568,6 +569,7 @@ static TEE_Result Drm_OTPReadPublicItems(TEE_Param params[4])
     readByte = (*(UINT8*)(pbSHMBuf+ 120 + 3) & 0x0c) >> 2;
     memcpy((UINT8*)&pubOtp.STEST_Protection_dup, &readByte, 1);
 
+#ifndef CONFIG_OPTEE
     //use RSA pub to encrypt otp dump data
     memset(clrBuffer, 0, 256);
     memset(encBuffer, 0, 256);
@@ -600,6 +602,9 @@ static TEE_Result Drm_OTPReadPublicItems(TEE_Param params[4])
     }
 
     memcpy(buffer, encBuffer, 256);
+#else
+    memcpy(buffer, &pubOtp, 256);
+#endif
     result = TEE_SUCCESS;
 
 Func_Ret:
@@ -610,7 +615,6 @@ Func_Ret:
     return result;
 
 }
-#endif
 
 static TEE_Result Drm_OTPReadChipRev(TEE_Param params[4])
 {
@@ -694,11 +698,9 @@ TEE_Result MV_DRM_OTP_InvokeCommandEntryPoint(uint32_t commandID,
     case DRM_SE_OTP_READ_CAS4_NDSID:
         result = Drm_OTPReadCas4PubId(params);
         break;
-#ifndef CONFIG_OPTEE
     case DRM_SE_OTP_READ_PUBLIC_ITEMS:
         result = Drm_OTPReadPublicItems(params);
         break;
-#endif
     case DRM_SE_OTP_READ_SOC_UID:
         result = Drm_OTPReadSOC_UID(params);
         break;

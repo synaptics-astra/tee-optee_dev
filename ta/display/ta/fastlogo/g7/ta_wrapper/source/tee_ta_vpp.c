@@ -16,6 +16,7 @@
 
 #include "tee_ta_vpp.h"
 #include "tee_ta_vpp_be.h"
+#include "vpp_obj.h"
 
 #define TA_OUTCTRL_UUID {0x1316a183, 0x894d, 0x43fe, {0x98, 0x93, 0xbb, 0x94, 0x6a, 0xe1, 0x03, 0xfc}}
 TEE_UUID output_control_ta_uuid=TA_OUTCTRL_UUID;
@@ -76,6 +77,8 @@ const INT32 gVoutPortBypassConfig[] = {
     /* VOUT_SD     */ -1,
 };
 
+const INT gVppFeatureCfg[MAX_NUM_FEATURE_CFG];
+
 /* ***************************************************
  * Create a new instance for the trusted application *
  * ***************************************************/
@@ -85,6 +88,7 @@ TEE_Result TA_EXPORT TA_CreateEntryPoint(void)
 #ifdef TZ_3_0
     result = VPP_TA_AddMemMap();
 #endif
+    VPP_TA_IncCreateInstanceCount();
     return result;
 }
 
@@ -211,7 +215,7 @@ TEE_Result TA_EXPORT TA_InvokeCommandEntryPoint(void *sessionContext,
 
         case VPP_CONFIG:
         params[0].value.a = MV_VPPOBJ_Config(0, gVinPortConfig,
-                                gDVConfig, gZorderConfig, gVoutPortConfig);
+                                gDVConfig, gZorderConfig, gVoutPortConfig, gVppFeatureCfg);
         break;
 
         case VPP_SETRES:

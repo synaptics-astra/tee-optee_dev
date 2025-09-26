@@ -2501,7 +2501,7 @@ INT MV_VPP_Early_Init(void);
 #endif //VPP_ENABLE_FLOW_PRINT
 
 #ifdef TZ_3_0
-int MV_VPP_INITVPPS(int instance,UINT32 vpp_addr,UINT32 heap_handle);
+int MV_VPP_INITVPPS(int instance, UINT32 dhub_init_flag, UINT32 intr_init_flag);
 #endif
 
 /******************************************************
@@ -2584,7 +2584,7 @@ int MV_VPPOBJ_EnableBypassMode(int handle, int flag);
  * INPUT: NONE
  * RETURN: NONE
  **************************************/
-int MV_VPPOBJ_Config(int handle, const int *pvinport_cfg, const int *pdv_cfg, const int *pzorder_cfg, const int *pvoutport_cfg);
+int MV_VPPOBJ_Config(int handle, const int *pvinport_cfg, const int *pdv_cfg, const int *pzorder_cfg, const int *pvoutport_cfg, const int *pfeature_cfg);
 
 // to be removed when VPP suspend/resume is ready
 int MV_VPP_GetPlaneInfo(int handle, int planeID, uintptr_t *curr_frame, uintptr_t *curr_still_picture, int *mute);
