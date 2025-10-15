@@ -22,16 +22,14 @@ EOF
 function make_optee()
 {
   BUILD_DIR=${MY_DIR}/out
-  oe_ver="13.3.0"
-  mcpu="cortexa73"
 
   if [ "${use_gnu_toolchain}" == "true" ]; then
     gnu_path="${SDK_PATH}/toolchain/aarch64/gcc-arm-aarch64-linux-gnu-8.3/bin"
     gnu_toolchain="${gnu_path}/aarch64-linux-gnu-"
     CROSS_COMPILE="${gnu_toolchain}"
   else
-    poky_path="${SDK_PATH}/toolchain/oe/linux-x64/gcc-${oe_ver}-poky"
-    OECORE_TARGET_SYSROOT="${poky_path}/sysroots/${mcpu}-poky-linux"
+    poky_path="${SDK_PATH}/toolchain/oe/linux-x64/gcc-11.3.0-poky"
+    OECORE_TARGET_SYSROOT="${poky_path}/sysroots/armv8a-poky-linux"
     OECORE_NATIVE_SYSROOT="${poky_path}/sysroots/x86_64-pokysdk-linux"
     poky_toolchain="${OECORE_NATIVE_SYSROOT}/usr/bin/aarch64-poky-linux"
     CROSS_COMPILE="${poky_toolchain}/aarch64-poky-linux-"
