@@ -23,7 +23,6 @@ void VPP_BE_MIPI_DsiInit(VPP_OBJ *vpp_obj)
 
 int VPP_BE_MIPIOBJ_Create(VPP_OBJ *vpp_obj)
 {
-    struct mipi_dsi_dev *dev;
     int size;
 
     size = sizeof(struct mipi_dsi_dev);
@@ -33,13 +32,22 @@ int VPP_BE_MIPIOBJ_Create(VPP_OBJ *vpp_obj)
             return (MV_VPP_ENOMEM);
         }
     }
+
+    return 0;
+}
+
+int VPP_BE_MIPIOBJ_Config(VPP_OBJ *vpp_obj)
+{
+    struct mipi_dsi_dev *dev;
+
     dev = (struct mipi_dsi_dev *)vpp_obj->dsiInfo.pmipi_dsi_dev;
 
     // Zero the device
-    VPP_Memset(dev, 0, size);
+    VPP_Memset(dev, 0, sizeof(struct mipi_dsi_dev));
     dev->pHandle = (void *)vpp_obj; //Store handle for BCM
 
     VPP_BE_MIPI_DsiInit(vpp_obj);
+
     return 0;
 }
 

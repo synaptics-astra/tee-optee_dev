@@ -429,4 +429,35 @@ HRESULT BCM_READ_SOC_UID(UINT8 *AddrSOCUID, UINT32 uSOCUIDLen);
  *   SUCCESS or one of the BCM error code
  */
 HRESULT BCM_WRITE_RKEKID(UINT8 *AddrRKEKID, UINT32 uRKEKIDLen);
+
+/*
+ * Function: HRESULT BCM_OTP_READ(UINT32 type, UINT32 *data, UINT32 *mask)
+ *
+ *   PI is called to read OTP data.
+ *
+ * Arguments:
+ * - type (IN)   - Type of OTP data to read
+ * - pdata (OUT)  - Buffer to store the read OTP data
+ * - pmask (OUT)  - Buffer to store the mask for the read OTP data
+ *
+ * Returns:
+ *   SUCCESS or one of the BCM error code
+ */
+HRESULT BCM_READ_OTP(UINT32 type, UINT32 *pdata, UINT32 *pmask);
+
+/*
+ * Function: HRESULT BCM_WRITE_OTP(UINT32 type, UINT32 data, UINT32 mask)
+ *
+ *   PI is called to write OTP data.
+ *
+ * Arguments:
+ * - type (IN)   - Type of OTP data to write
+ * - data (IN)   - OTP data to write
+ * - mask (IN)   - mask for the OTP data
+ *
+ * Returns:
+ *   SUCCESS or one of the BCM error code
+ */
+HRESULT BCM_WRITE_OTP(UINT32 type, UINT32 data, UINT32 mask);
+
 #endif

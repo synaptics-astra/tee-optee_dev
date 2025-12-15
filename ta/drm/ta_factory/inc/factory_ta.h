@@ -53,6 +53,8 @@
 #define DRM_SE_OTP_READ_SOC_UID                     0xE009
 #define DRM_SE_OTP_READ_CHIP_REV                    0xE00A
 #define DRM_SE_OTP_WRITE_RKEKID                     0xE00B
+#define DRM_SE_OTP_READ_OTP                         0xE00C
+#define DRM_SE_OTP_WRITE_OTP                        0xE00D
 
 //CRYPTO
 #define DRM_SE_RSA_SIGN_VERIFY                      0xD001

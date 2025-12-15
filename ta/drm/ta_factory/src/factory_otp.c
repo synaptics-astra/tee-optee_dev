@@ -677,10 +677,87 @@ Func_Ret:
     return lRes;
 }
 
+static TEE_Result Drm_OTPReadOTP(TEE_Param params[4])
+{
+    TEE_Result result = TEE_ERROR_GENERIC;
+    UINT32 size = 2 * sizeof(UINT32);
+    UINT32 type = 0;
+    UINT32 *pdata = NULL; //pointer to data in shared memory
+    UINT32 *pmask = NULL; //pointer to mask in shared memory
+    UINT8 *pbSHMBuf = NULL;
+    DRM_TEE_SHM_HANDLE pbshmhandle = INVALID_SHM_HANDLE;
+
+    type = params[0].value.a;
+
+    pbSHMBuf = DRM_TEE_SHM_Malloc(size, &pbshmhandle);
+    if (NULL == pbSHMBuf) {
+        FACTORY_ERR("Out of memory\n");
+        result = TEE_ERROR_OUT_OF_MEMORY;
+        goto Func_Ret;
+    }
+
+    memset(pbSHMBuf, 0, size);
+    if (TEE_SUCCESS != TEE_FlushCache(pbSHMBuf, size)) {
+        FACTORY_ERR("Failed to flush cache\n");
+        result = TEE_ERROR_GENERIC;
+        goto Func_Ret;
+    }
+
+    pdata = (UINT32 *)pbSHMBuf;
+    pmask = (UINT32 *)(pbSHMBuf + sizeof(UINT32));
+
+    result = BCM_READ_OTP(type, pdata, pmask);
+
+    if (TEE_InvalidateCache(pbSHMBuf, size) != TEE_SUCCESS) {
+        FACTORY_ERR("Failed to invalidate cache\n");
+        result = TEE_ERROR_GENERIC;
+    }
+
+    params[1].value.a = *pdata;
+    params[1].value.b = 0;      /* not used */
+    params[2].value.a = *pmask;
+    params[2].value.b = 0;      /* not used */
+
+    //DMSG("Drm_OTPReadOTP: type=0x%08X, data=0x%08X, mask=0x%08X\n", type, *pdata, *pmask);
+
+Func_Ret:
+    DRM_TEE_SHM_Free(pbshmhandle);
+
+    return result;
+}
+
+static TEE_Result Drm_OTPWriteOTP(TEE_Param params[4])
+{
+    TEE_Result result = TEE_ERROR_GENERIC;
+    HRESULT lRes = E_FAIL;
+    UINT32 type = 0;
+    UINT32 data = 0;
+    UINT32 mask = 0;
+
+    type = params[0].value.a;
+    data = params[1].value.a;
+    mask = params[2].value.a;
+
+    //DMSG("Drm_OTPWriteOTP: type=0x%08X, data=0x%08X, mask=0x%08X\n", type, data, mask);
+
+    lRes = BCM_WRITE_OTP(type, data, mask);
+    if (S_OK != lRes) {
+        FACTORY_ERR("Failed to call BCM command (error %X)\n", lRes);
+        result = TEE_ERROR_GENERIC;
+        goto Func_Ret;
+    } else {
+        result = TEE_SUCCESS;
+    }
+
+Func_Ret:
+    return result;
+}
+
+
 TEE_Result MV_DRM_OTP_InvokeCommandEntryPoint(uint32_t commandID,
                                               TEE_Param params[4])
 {
-    TEE_Result result = TEE_SUCCESS;
+    TEE_Result result = TEE_ERROR_GENERIC;
 
     /* This dispatcher can only handle OTP related functions */
     assert(OTP_MASK == (commandID & OTP_MASK));
@@ -709,6 +786,12 @@ TEE_Result MV_DRM_OTP_InvokeCommandEntryPoint(uint32_t commandID,
         break;
     case DRM_SE_OTP_WRITE_RKEKID:
         result = Drm_OTPWriteRKEKID(params);
+        break;
+    case DRM_SE_OTP_READ_OTP:
+        result = Drm_OTPReadOTP(params);
+        break;
+    case DRM_SE_OTP_WRITE_OTP:
+        result = Drm_OTPWriteOTP(params);
         break;
     default:
         break;

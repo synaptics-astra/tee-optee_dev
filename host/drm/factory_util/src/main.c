@@ -71,6 +71,9 @@ const char* OTP_DUMP_FILE = "/data/otp_dump.bin";
 #define DRM_SE_CA_CMD_OTP_READ_SOC_UID    0xE009
 #define DRM_SE_CA_CMD_OTP_READ_CHIP_REV   0xE00A
 
+#define DRM_SE_CA_CMD_OTP_READ_OTP        0xE00C
+#define DRM_SE_CA_CMD_OTP_WRITE_OTP       0xE00D
+
 #define DRM_CAS4_PUB_OTP_LEN 8
 
 #define CAS1_JTAG_NAME "CAS1 JTAG"
@@ -109,9 +112,114 @@ typedef struct {
    unsigned char  STEST_Protection_dup;
 } PUBLIC_OTP_ITEMS;
 
+typedef enum {
+    /* ---- USER DATA Section ---- */
+    OTP_USER_DATA_0 = 0,                      // 128 bytes = 1024 bits = 32 x uint32_t
+    OTP_USER_DATA_1,
+    OTP_USER_DATA_2,
+    OTP_USER_DATA_3,
+    OTP_USER_DATA_4,
+    OTP_USER_DATA_5,
+    OTP_USER_DATA_6,
+    OTP_USER_DATA_7,
+    OTP_USER_DATA_8,
+    OTP_USER_DATA_9,
+    OTP_USER_DATA_10,
+    OTP_USER_DATA_11,
+    OTP_USER_DATA_12,
+    OTP_USER_DATA_13,
+    OTP_USER_DATA_14,
+    OTP_USER_DATA_15,
+    OTP_USER_DATA_16,
+    OTP_USER_DATA_17,
+    OTP_USER_DATA_18,
+    OTP_USER_DATA_19,
+    OTP_USER_DATA_20,
+    OTP_USER_DATA_21,
+    OTP_USER_DATA_22,
+    OTP_USER_DATA_23,
+    OTP_USER_DATA_24,
+    OTP_USER_DATA_25,
+    OTP_USER_DATA_26,
+    OTP_USER_DATA_27,
+    OTP_USER_DATA_28,
+    OTP_USER_DATA_29,
+    OTP_USER_DATA_30,
+    OTP_USER_DATA_31,
+
+    /* ---- OEM Ownership ---- */
+    OTP_K0_OEM_HASH_0 = 100,              // 256 bits = 8 x uint32_t
+    OTP_K0_OEM_HASH_1,
+    OTP_K0_OEM_HASH_2,
+    OTP_K0_OEM_HASH_3,
+    OTP_K0_OEM_HASH_4,
+    OTP_K0_OEM_HASH_5,
+    OTP_K0_OEM_HASH_6,
+    OTP_K0_OEM_HASH_7,
+
+    OTP_AESK0_0,                          // 128 bits = 4 x uint32_t
+    OTP_AESK0_1,
+    OTP_AESK0_2,
+    OTP_AESK0_3,
+
+    OTP_REE_SEGID,                        // 32 bits (1 x uint32_t)
+    OTP_REE_SECURITY_ENABLE,              // 1 bits (1 x uint32_t)
+    OTP_BOOT_SECURITY_ENABLE,             // 1 bits (1 x uint32_t)
+    OTP_MP_PROVISION_DONE,                // 1 bits (1 x uint32_t)
+    OTP_SCS_AREA_SIZE_SEL,                // 2 bits (1 x uint32_t)
+    OTP_REE_JTAG_PROTECTION_POLICY,       // 2 bits (1 x uint32_t)
+
+    /* ---- Synaptics Ownership ---- */
+    OTP_EMMC_BOOT_DISABLE = 200,          // 1 bit  (1 x uint32_t)
+    OTP_SPI_BOOT_DISABLE,                 // 1 bit  (1 x uint32_t)
+    OTP_DOLBY_AUDIO_DISABLE,              // 1 bit  (1 x uint32_t)
+    OTP_OEM_AUDIO_CUSTOMER_ID,            // 32 bits (1 x uint32_t)
+    OTP_PRODUCTION_CHIP_FLAG,             // 3 bits  (1 x uint32_t)
+    OTP_USB_BOOT_DISABLE,                 // 1 bit  (1 x uint32_t)
+
+    OTP_FIELD_MAX
+} OTP_FIELD_ID;
+
+/* ---- Lookup Table ---- */
+typedef struct {
+    int value;
+    const char *name;
+} otp_field_entry_t;
+
+static const otp_field_entry_t otp_field_table[] = {
+#define X(v) {v, #v}
+    /* USER DATA Section */
+    X(OTP_USER_DATA_0),  X(OTP_USER_DATA_1),  X(OTP_USER_DATA_2),  X(OTP_USER_DATA_3),
+    X(OTP_USER_DATA_4),  X(OTP_USER_DATA_5),  X(OTP_USER_DATA_6),  X(OTP_USER_DATA_7),
+    X(OTP_USER_DATA_8),  X(OTP_USER_DATA_9),  X(OTP_USER_DATA_10), X(OTP_USER_DATA_11),
+    X(OTP_USER_DATA_12), X(OTP_USER_DATA_13), X(OTP_USER_DATA_14), X(OTP_USER_DATA_15),
+    X(OTP_USER_DATA_16), X(OTP_USER_DATA_17), X(OTP_USER_DATA_18), X(OTP_USER_DATA_19),
+    X(OTP_USER_DATA_20), X(OTP_USER_DATA_21), X(OTP_USER_DATA_22), X(OTP_USER_DATA_23),
+    X(OTP_USER_DATA_24), X(OTP_USER_DATA_25), X(OTP_USER_DATA_26), X(OTP_USER_DATA_27),
+    X(OTP_USER_DATA_28), X(OTP_USER_DATA_29), X(OTP_USER_DATA_30), X(OTP_USER_DATA_31),
+
+    /* OEM Ownership */
+    X(OTP_K0_OEM_HASH_0), X(OTP_K0_OEM_HASH_1), X(OTP_K0_OEM_HASH_2), X(OTP_K0_OEM_HASH_3),
+    X(OTP_K0_OEM_HASH_4), X(OTP_K0_OEM_HASH_5), X(OTP_K0_OEM_HASH_6), X(OTP_K0_OEM_HASH_7),
+    X(OTP_AESK0_0), X(OTP_AESK0_1), X(OTP_AESK0_2), X(OTP_AESK0_3),
+    X(OTP_REE_SEGID), X(OTP_REE_SECURITY_ENABLE), X(OTP_BOOT_SECURITY_ENABLE),
+    X(OTP_MP_PROVISION_DONE), X(OTP_SCS_AREA_SIZE_SEL), X(OTP_REE_JTAG_PROTECTION_POLICY),
+
+    /* Synaptics Ownership */
+    X(OTP_EMMC_BOOT_DISABLE), X(OTP_SPI_BOOT_DISABLE), X(OTP_DOLBY_AUDIO_DISABLE),
+    X(OTP_OEM_AUDIO_CUSTOMER_ID), X(OTP_PRODUCTION_CHIP_FLAG), X(OTP_USB_BOOT_DISABLE),
+
+    X(OTP_FIELD_MAX)
+#undef X
+};
+
 typedef signed int HRESULT;
 #define S_OK 0
 #define S_FALSE 1
+
+#ifndef ARRAY_SIZE
+#define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
+#endif
 
 static const TEEC_UUID TEEC_FACTORY_TA_UUID = FACTORY_TA_UUID;
 static bool bInitialized = false;
@@ -122,6 +230,7 @@ void UsageHelp(int argc, char* argv[])
 {
     printf("Usage:\n");
     printf("    %s category case ...\n", argv[0]);
+    printf("\n");
     printf("    category:\n");
     printf("        0: read JTAG status (check CAS automatically)\n");
     printf("        1: read CAS4 PUBLIC OTP\n");
@@ -130,6 +239,31 @@ void UsageHelp(int argc, char* argv[])
     printf("        2: read encrypted public OTP items to %s\n", OTP_DUMP_FILE);
     printf("        3: read SOC_UID from OTP\n");
     printf("        4: read chip revision from OTP\n");
+    printf("        6: OTP utility commands\n");
+    printf("            usage:\n");
+    printf("                %s 6 otpread  <otp_index>\n", argv[0]);
+    printf("                %s 6 otpread    0\n", argv[0]);
+    printf("                %s 6 otpread    1\n", argv[0]);
+    printf("\n");
+    printf("                %s 6 otpwrite <otp_index> <data> <mask>\n", argv[0]);
+    printf("                %s 6 otpwrite 1 0x500      0xFFF\n", argv[0]);
+    printf("                %s 6 otpwrite 2 0x1A2B3C4D 0xFFFFFFFF\n", argv[0]);
+    printf("                %s 6 otpwrite 3 0x1A2B0000 0xFFFF0000\n", argv[0]);
+    printf("                %s 6 otpwrite 4 0x00010000 0x00010000\n", argv[0]);
+    printf("\n");
+    printf("            Note:\n");
+    printf("                - otp_index: can be decimal or hex (e.g., 10 or 0xA)\n");
+    printf("                - otpread  : read OTP value at index\n");
+    printf("                             return:  0          : Success\n");
+    printf("                             return:  0xFF000001 : STATUS_FAILURE\n");
+    printf("                             return:  0xFF000050 : STATUS_OTP_INVALID_IDX\n");
+    printf("                             return:  0xFF000052 : STATUS_OTP_ERROR_WRITEONLY_FIELD\n");
+    printf("                - otpwrite : write OTP with data and mask\n");
+    printf("                             return:  0          : Success\n");
+    printf("                             return:  0xFF000001 : STATUS_FAILURE\n");
+    printf("                             return:  0xFF000050 : STATUS_OTP_INVALID_IDX\n");
+    printf("                             return:  0xFF000051 : STATUS_OTP_ERROR_READONLY_FIELD\n");
+
 }
 
 static void printPublicOtp(const PUBLIC_OTP_ITEMS *otp) {
@@ -171,6 +305,15 @@ static void printPublicOtp(const PUBLIC_OTP_ITEMS *otp) {
     printf("BSCAN_Protection_dup: 0x%02X\n", otp->BSCAN_Protection_dup);
     printf("STEST_Protection: 0x%02X\n", otp->STEST_Protection);
     printf("STEST_Protection_dup: 0x%02X\n", otp->STEST_Protection_dup);
+}
+
+/* ---- Dump Implementation ---- */
+static void do_otp_idx_dump(void)
+{
+    printf("                %-8s %-40s\n", "otp_index", "Name");
+    printf("                -----------------------------------------------\n");
+    for (size_t i = 0; i < ARRAY_SIZE(otp_field_table); ++i)
+        printf("                %-8d %s\n", otp_field_table[i].value, otp_field_table[i].name);
 }
 
 HRESULT Factory_TZInitialize(void)
@@ -549,40 +692,229 @@ __EXIT:
     return lRes;
 }
 
+HRESULT _otp_read(uint32_t idx, uint32_t *val, uint32_t *mask)
+{
+    HRESULT      lRes    = S_FALSE;
+    TEEC_Result  result  = TEEC_ERROR_GENERIC;
+    uint32_t     origin  = 0;
+    TEEC_Operation operation;
+
+    if (!val || !mask) {
+        printf("%s: invalid output pointer(s)\n", __FUNCTION__);
+        return S_FALSE;
+    }
+
+    if (idx >= OTP_FIELD_MAX) {
+        printf("%s: invalid otp index %u\n", __FUNCTION__, idx);
+        return S_FALSE;
+    }
+
+    *val  = 0;
+    *mask = 0;
+
+    lRes = Factory_TZInitialize();
+    if (lRes != S_OK) {
+        printf("TZ initialize failed\n");
+        lRes = S_FALSE;
+        goto __EXIT;
+    }
+
+    memset(&operation, 0, sizeof(operation));
+    operation.paramTypes = TEEC_PARAM_TYPES(
+        TEEC_VALUE_INPUT,   /* p0: idx in a */
+        TEEC_VALUE_OUTPUT,  /* p1: val out in a */
+        TEEC_VALUE_OUTPUT,  /* p2: mask out in a */
+        TEEC_NONE
+    );
+
+    operation.params[0].value.a = (uint32_t)idx;
+    operation.started = 1;
+
+    result = TEEC_InvokeCommand(
+        &session,
+        DRM_SE_CA_CMD_OTP_READ_OTP,
+        &operation,
+        &origin);
+
+    *val  = operation.params[1].value.a;
+    *mask = operation.params[2].value.a;
+
+    if (result == TEEC_SUCCESS) {
+        lRes = S_OK;
+    } else {
+        printf("%s:%d: Invoke failed, res=0x%08x origin=%u\n",
+               __FUNCTION__, __LINE__, result, origin);
+        lRes = S_FALSE;
+    }
+
+    printf("%s: idx=%d, val=0x%08X, mask=0x%08X\n", __FUNCTION__, idx, *val, *mask);
+
+__EXIT:
+    Factory_TZFinalize();
+    return lRes;
+}
+
+HRESULT _otp_write(uint32_t idx, uint32_t val, uint32_t mask)
+{
+    HRESULT        lRes    = S_FALSE;
+    TEEC_Result    result  = TEEC_ERROR_GENERIC;
+    uint32_t       origin  = 0;
+    TEEC_Operation operation;
+    unsigned       attempt = 0;
+
+    printf("%s: idx=%d, val=0x%08X, mask=0x%08X\n", __FUNCTION__, idx, val, mask);
+
+    if (idx >= OTP_FIELD_MAX) {
+        printf("%s: invalid otp index %u\n", __FUNCTION__, idx);
+        return S_FALSE;
+    }
+
+    lRes = Factory_TZInitialize();
+    if (lRes != S_OK) {
+        printf("TZ initialize failed\n");
+        return S_FALSE;
+    }
+
+    memset(&operation, 0, sizeof(operation));
+    operation.paramTypes = TEEC_PARAM_TYPES(
+        TEEC_VALUE_INPUT,   /* p0: idx  */
+        TEEC_VALUE_INPUT,   /* p1: val  */
+        TEEC_VALUE_INPUT,   /* p2: mask */
+        TEEC_NONE
+    );
+
+    operation.params[0].value.a = idx;
+    operation.params[1].value.a = val;
+    operation.params[2].value.a = mask;
+
+    operation.started = 1;
+
+    result = TEEC_InvokeCommand(
+            &session,
+            DRM_SE_CA_CMD_OTP_WRITE_OTP,
+            &operation,
+            &origin);
+
+    if (result == TEEC_SUCCESS) {
+        lRes = S_OK;
+    } else {
+        printf("%s: Invoke failed (idx=%d, val=0x%08X, mask=0x%08X), "
+               "res=0x%08X origin=%u\n",
+               __FUNCTION__, idx, val, mask, result, origin);
+        lRes = S_FALSE;
+    }
+
+    Factory_TZFinalize();
+    return lRes;
+}
+
+static int parse_u32(const char *s, uint32_t *out)
+{
+    char *end = NULL;
+    unsigned long v = strtoul(s, &end, 0);  /* base 0: auto 0x, 0, or 10 */
+    if (end == s || *end != '\0' || v > 0xFFFFFFFFUL) {
+        return -1;
+    }
+    *out = (uint32_t)v;
+    return 0;
+}
+
 int main(int argc, char *argv[])
 {
     int status = -1;
-    int category = -1;
-    int category_case = -1;
+    uint32_t category = (uint32_t)-1;
+    uint32_t category_case = (uint32_t)-1;
 
-    if (argc != 2 && argc != 3) {
-       UsageHelp(argc, argv);
-       return status;
+    if (argc < 2) {
+        UsageHelp(argc, argv);
+        return status;
     }
 
-    category = strtol(argv[1], NULL, 10);
-    if (argc == 3)
-        category_case = strtol(argv[2], NULL, 10);
+    /* Parse category */
+    if (parse_u32(argv[1], &category) != 0) {
+        fprintf(stderr, "Invalid <category>: '%s'\n", argv[1]);
+        UsageHelp(argc, argv);
+        return status;
+    }
 
     switch (category) {
     case 0:
-       status = _read_jtag_status(0);
-       break;
-    case 1:
-        status = _read_cas4_pubOtp(category_case);
+        if (argc != 2) { UsageHelp(argc, argv); break; }
+        status = _read_jtag_status(0);
         break;
+
+    case 1:
+        if (argc != 3) { UsageHelp(argc, argv); break; }
+        if (parse_u32(argv[2], &category_case) != 0) {
+            fprintf(stderr, "Invalid <case>: '%s'\n", argv[2]);
+            break;
+        }
+        status = _read_cas4_pubOtp((int)category_case);
+        break;
+
     case 2:
+        if (argc != 2) { UsageHelp(argc, argv); break; }
         status = _read_public_otp_items();
         break;
+
     case 3:
+        if (argc != 2) { UsageHelp(argc, argv); break; }
         status = _read_SOC_UID();
         break;
+
     case 4:
+        if (argc != 2) { UsageHelp(argc, argv); break; }
         status = _read_chip_rev();
         break;
+
+    case 6: {
+        if (argc < 4) { UsageHelp(argc, argv); do_otp_idx_dump(); break; }
+
+        const char *cmd = argv[2];
+
+        if (strcmp(cmd, "otpread") == 0) {
+            /* ./factory_util 6 otpread otp_index */
+            if (argc != 4) { UsageHelp(argc, argv); do_otp_idx_dump(); break; }
+
+            uint32_t idx = 0, val = 0, mask = 0;
+            if (parse_u32(argv[3], &idx) != 0) {
+                fprintf(stderr, "Invalid <otp_index>: '%s'\n", argv[3]);
+                break;
+            }
+
+            status = _otp_read(idx, &val, &mask);
+            if (status == 0) {
+                printf("OTP[%u] = 0x%08X, mask=0x%08X\n", idx, val, mask);
+            } else {
+                fprintf(stderr, "otpread failed for index %u (status=%d)\n", idx, status);
+            }
+
+        } else if (strcmp(cmd, "otpwrite") == 0) {
+            /* ./factory_util 6 otpwrite otp_index data mask */
+            if (argc != 6) { UsageHelp(argc, argv); do_otp_idx_dump(); break; }
+
+            uint32_t idx = 0, data = 0, mask = 0;
+            if (parse_u32(argv[3], &idx)  != 0) { fprintf(stderr, "Invalid <otp_index>: '%s'\n", argv[3]); break; }
+            if (parse_u32(argv[4], &data) != 0) { fprintf(stderr, "Invalid <data>: '%s'\n",      argv[4]); break; }
+            if (parse_u32(argv[5], &mask) != 0) { fprintf(stderr, "Invalid <mask>: '%s'\n",      argv[5]); break; }
+
+            status = _otp_write(idx, data, mask);
+            if (status == 0) {
+                printf("Wrote OTP[%u]: data=0x%08X mask=0x%08X\n", idx, data, mask);
+            } else {
+                fprintf(stderr, "otpwrite failed for index %u (status=%d)\n", idx, status);
+            }
+
+        } else {
+            fprintf(stderr, "Unknown subcommand for category 6: '%s'\n", cmd);
+            UsageHelp(argc, argv);
+        }
+        break;
+    }
+
     default:
-       UsageHelp(argc, argv);
-       break;
+        UsageHelp(argc, argv);
+        break;
     }
 
     return status;

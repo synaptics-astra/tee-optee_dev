@@ -213,8 +213,6 @@ TYPEDEF_STRUCT(vpu_obj_dbg_t)
 
 typedef vpu_obj_dbg_t vmeta_dbg_t;
 
-extern vmeta_dbg_t *g_vmeta_dbg;
-
 enum
 {
     ICFG_CPU_PARSER     = 1 << 0,
@@ -331,11 +329,6 @@ TYPEDEF_STRUCT(vpu_perf_dbg_t)
     unsigned int output_crc[8][10];
     unsigned int output_cnt[8];
 
-    unsigned int hctx_addr;         // physical address
-    unsigned int hctx_size;
-    unsigned int hctx_reg_addr;
-    unsigned int hctx_reg_val;
-
     // end of data fields
     unsigned int _rsvd_;
 
@@ -349,9 +342,11 @@ TYPEDEF_STRUCT(vpu_perf_dbg_t)
     unsigned int pc_m3;
 };
 
+extern vpu_perf_dbg_t g_v2g_perf_obj;
+
 extern vpu_perf_dbg_t *g_v2g_perf;
 
-int vdec_debug (void *strm_cntxt, void *x);
+int vdec_debug(void *strm_cntxt, void *x);
 
 #ifdef __cplusplus
 }

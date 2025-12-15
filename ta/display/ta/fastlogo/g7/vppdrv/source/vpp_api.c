@@ -24,6 +24,7 @@
 #include "vpp_be_hdcp.h"
 #include "vpp_dv_api.h"
 #include "vpp_intr_util.h"
+#include "vpp_clk.h"
 
 #ifdef CONFIG_AMP_DCM
 #include "vpp_mp.h"
@@ -1135,7 +1136,9 @@ int MV_VPPOBJ_Destroy(int handle)
 }
 
 #if defined(VPP_SUS_RES)
-//#define VPP_LINUXSDK_FORCE_SETHDMIFMT_AFTER_DELAY
+#ifdef CONFIG_VPP_FASTLOGO_SUPPORT
+#define VPP_LINUXSDK_FORCE_SETHDMIFMT_AFTER_DELAY
+#endif
 #define VPP_ENABLE_OPTIMIZED_METHOD_FOR_SUS_RES
 #ifdef VPP_ENABLE_OPTIMIZED_METHOD_FOR_SUS_RES
 int MV_VPPOBJ_Suspend_Optimized(int handle)
@@ -1273,15 +1276,21 @@ int MV_VPPOBJ_Suspend(int handle, BOOL optimize)
         // Backup current status to vpp_sus before freeze/suspend
         VPP_Memcpy(vpp_sus->be.hdmiTx, vpp_obj->be.hdmiTx, sizeof(BE_HDMITX_DATA));
         ptr = vpp_sus->be.hdmiTx;
+#ifdef CONFIG_HDMI_CEC_SUPPORT
         VPP_Memcpy(vpp_sus->be.hdmiCec, vpp_obj->be.hdmiCec, sizeof(CEC_SRV_DATA));
         ptr1 = vpp_sus->be.hdmiCec;
+#endif
         VPP_Memcpy(vpp_sus, vpp_obj, sizeof(VPP_OBJ));
         vpp_sus->be.hdmiTx = ptr;
+#ifdef CONFIG_HDMI_CEC_SUPPORT
         vpp_sus->be.hdmiCec = ptr1;
+#endif
 
         retVal = MV_VPPOBJ_Suspend_Optimized(handle);
+#ifdef CONFIG_OVP_WITH_VPPLIB
         /* OVPS has clock dependency with VPP, So OVPS is suspend after VPP */
         MV_OVPS_Suspend();
+#endif
         /*Gate Power/CLK here */
         MV_VPP_EnableClkGate();
 
@@ -1329,7 +1338,9 @@ int MV_VPPOBJ_Resume(int handle, BOOL optimize)
 
     if (optimize)
     {
-        MV_OVPS_Resume();
+#ifdef CONFIG_OVP_WITH_VPPLIB
+       MV_OVPS_Resume();
+#endif
         return MV_VPPOBJ_Resume_Optimized(handle);
     }
 
@@ -1362,6 +1373,9 @@ int MV_VPPOBJ_Resume(int handle, BOOL optimize)
 #endif
 #endif //VPP_ENABLE_AVIO_RESET_DURING_SUSPEND_RESUME
 
+    //Enable A/V-PLL clk enable
+    MV_VPP_Clk_Ctrl();
+
    /* Initializing VPP module */
     pHdmiTx =(BE_HDMITX_DATA*) vpp_sus->be.hdmiTx;
     HdmiTxCbFn = pHdmiTx->appCbFn;
@@ -1376,7 +1390,10 @@ int MV_VPPOBJ_Resume(int handle, BOOL optimize)
     MV_VPPOBJ_UnRegisterHdmiCallback(handle);
     MV_VPPOBJ_UnRegisterHdcpCallback(handle);
 
+#if CONFIG_HDMI_CEC_SUPPORT
     MV_VPPOBJ_CecUnregisterCallback(handle);
+#endif
+
     MV_VPPOBJ_UnRegisterHdmiCpcb0Callback(handle);
 
     MV_VPPOBJ_Reset(handle);
@@ -1397,7 +1414,9 @@ int MV_VPPOBJ_Resume(int handle, BOOL optimize)
 
     MV_VPPOBJ_Config(handle, vinport_cfg, dv_cfg, zorder_cfg, voutport_cfg, vpp_sus->iVppFeatureCfg);
     VPP_BE_Resume(vpp_obj);
-    VPP_BE_MIPI_DsiInit(vpp_obj);
+
+    if (vpp_obj->iVppFeatureCfg[0] & VPP_FEATURE_MIPI_DSI)
+        VPP_BE_MIPI_DsiInit(vpp_obj);
 
     /* 1. Resuming CPCBs */
     for (cpcbID=FIRST_CPCB; cpcbID<MAX_NUM_CPCBS; cpcbID++)
@@ -1407,7 +1426,6 @@ int MV_VPPOBJ_Resume(int handle, BOOL optimize)
             VPP_DISP_OUT_PARAMS dispParams;
 
             VPP_Memcpy(&dispParams, &vpp_sus->dv[cpcbID].dispOutParams,  sizeof(VPP_DISP_OUT_PARAMS));
-            dispParams.uiResId |= 0x80000000;
 
             MV_VPPOBJ_SetFormat(handle, cpcbID, &dispParams);
 
@@ -1478,15 +1496,17 @@ int MV_VPPOBJ_Resume(int handle, BOOL optimize)
         }
     }
 
+#ifndef CONFIG_VPP_FASTLOGO_SUPPORT
     /* Wait for VBI interrupts to come through userspace */
     MV_VPPOBJ_GetCPCBInterruptCounter(handle, CPCB_1, &step);
     do {
-        /* Also check if interrupts started in kernel */
-        if (MV_VPPOBJ_isVBIIntrGenerated(vpp_obj))
-            break;
-        MV_VPPOBJ_GetCPCBInterruptCounter(handle, CPCB_1, &i);
-        MV_OSAL_Task_Sleep(100);
+	    /* Also check if interrupts started in kernel */
+	    if (MV_VPPOBJ_isVBIIntrGenerated(vpp_obj))
+		    break;
+	    MV_VPPOBJ_GetCPCBInterruptCounter(handle, CPCB_1, &i);
+	    MV_OSAL_Task_Sleep(100);
     } while ((i < step+1));
+#endif
 
 #ifdef ENABLE_PIP_GFX0_PATH
     /* 4. Resuming DVs, scl coeff */
@@ -1512,17 +1532,22 @@ int MV_VPPOBJ_Resume(int handle, BOOL optimize)
 #ifdef XVYCC_SUPPORT
     MV_VPPOBJ_xvYCCEnable(handle, vpp_sus->xvYCC_enable);
 #endif
+
+#ifdef CONFIG_HDMI_CEC_SUPPORT
     // resuming CEC
     MV_VPPOBJ_CecConfigFeatureSupport(handle, vpp_sus->be.cecFeatureSupportCfg);
     MV_VPPOBJ_CecEnable(handle, vpp_sus->be.enableCec);
 
     if(vpp_sus->be.cecPhyAddr != VPP_CEC_INVALID_PHY_ADDR)
        MV_VPPOBJ_CecSetPhysicalAddr(handle, vpp_sus->be.cecPhyAddr);
+
+    MV_VPPOBJ_CecRegisterCallback(handle, CecEvtCode, CecCbFn, CecCtxPara);
+#endif
+
     /* 9. Resuming LVDS  */
     /* 10. Resuming Misc  */
     MV_VPPOBJ_RegisterHdmiCallback(handle, HdmiTxEvtCode, HdmiTxCbFn, HdmiTxCtxPara);
     MV_VPPOBJ_RegisterHdcpCallback(handle, HdmiTxEvtCode, HdmiTxCbFn, HdmiTxCtxPara);
-    MV_VPPOBJ_CecRegisterCallback(handle, CecEvtCode, CecCbFn, CecCtxPara);
     MV_VPPOBJ_RegisterHdmiCpcb0Callback(handle, vpp_sus->hdmi_cpcb0_dsr_cb);
 
     g_vpp->suspend_status[handle] = 0;
@@ -2281,6 +2306,11 @@ int MV_VPPOBJ_Config(int handle, const int *pvinport_cfg, const int *pdv_cfg, co
 
     if (!(pfeature_cfg[0] & VPP_FEATURE_HDMITX))
         VPP_BE_HdmiPowerDown(vpp_obj);
+
+    VPP_BE_MIPIOBJ_Config(vpp_obj);
+
+    if (!(pfeature_cfg[0] & VPP_FEATURE_MIPI_DSI))
+        VPP_BE_MIPI_PanelDeInit(vpp_obj);
 
     VPP_Memcpy(vpp_obj->iVppFeatureCfg, pfeature_cfg,
                sizeof(vpp_obj->iVppFeatureCfg));
@@ -4065,9 +4095,16 @@ int MV_VPPOBJ_SetCPCBOutputResolution(int handle, int cpcbID, int resID, int bit
     VPP_ResetPlane(vpp_obj, uiDisplayMode);
     vpp_obj->m_VoutMode = uiDisplayMode;
 
-    /*Handle dynamic switching between DSI & HDMI*/
-    if(IS_DSI_PANEL_RES(resID)) {
-        VPP_BE_MIPI_PanelInit(vpp_obj, (resID - RES_MIN_DSI));
+    if (vpp_obj->iVppFeatureCfg[0] & VPP_FEATURE_MIPI_DSI) {
+        /*Handle dynamic switching between DSI & HDMI*/
+        if(IS_DSI_PANEL_RES(resID)) {
+            VPP_BE_MIPI_PanelInit(vpp_obj, (resID - RES_MIN_DSI));
+        } else {
+            if (!(vpp_obj->iVppFeatureCfg[0] & VPP_FEATURE_HDMITX)) {
+                VPPAPI_DBG_ERROR("Invalid MIPI-DSI Res ID = %d\n", resID);
+                return (MV_VPP_EBADPARAM);
+            }
+        }
     }
 
     if (resID != RES_RESET) {
@@ -6890,7 +6927,9 @@ int MV_VPPOBJ_RegisterHdmiCallback (int handle, UINT32 eventCode,
                                     void *contextParam)
 {
     VPP_OBJ *vpp_obj;
-    int params[4];
+    int *params;
+    uintptr_t paddr;
+    char *paramsOffset;
 
     VPPAPI_DBG_INFO(" eventCode [%d], callbackFn [0x%x] \n",  eventCode, (int)callbackFn);
 
@@ -6899,17 +6938,34 @@ int MV_VPPOBJ_RegisterHdmiCallback (int handle, UINT32 eventCode,
     }
     if (handle<0 || handle>=MAX_NUM_OBJECTS)
         return (MV_VPP_EBADPARAM);
+
     vpp_obj = g_vpp->vpp_objs[handle];
     if (!vpp_obj)
         return (MV_VPP_ENODEV);
+
     if (vpp_obj->status == STATUS_INACTIVE){
         return (MV_VPP_EUNCONFIG);
     }
+
+    params = (int *)VPP_Malloc(2*sizeof(int) + 2*sizeof(uintptr_t));
+    if (!params)
+        return (MV_VPP_ENOMEM);
+
     params[0] = VPP_HDMI_REG_CALLBACK;
     params[1] = (int)eventCode;
-    params[2] = (int)callbackFn;
-    params[3] = (int)contextParam;
+
+    paramsOffset = (char *)(&params[2]);
+    paddr = (uintptr_t)callbackFn;
+    VPP_Memcpy(paramsOffset, &paddr, sizeof(uintptr_t));
+    paramsOffset += sizeof(uintptr_t);
+    paddr = (uintptr_t)contextParam;
+    VPP_Memcpy(paramsOffset, &paddr, sizeof(uintptr_t));
+    paramsOffset += sizeof(uintptr_t);
+
     VPP_SetHdmiCmd (vpp_obj, params);
+
+    VPP_Free(params);
+
     return (MV_VPP_OK);
 }
 
@@ -11108,9 +11164,16 @@ int MV_VPPOBJ_SetFormat(int handle, int cpcbID, VPP_DISP_OUT_PARAMS *pDispParams
         VPP_ResetPlane(vpp_obj, uiDisplayMode);
         vpp_obj->m_VoutMode = uiDisplayMode;
 
-        /*Handle dynamic switching between DSI & HDMI*/
-        if(IS_DSI_PANEL_RES(resID)) {
-            VPP_BE_MIPI_PanelInit(vpp_obj, (resID - RES_MIN_DSI));
+        if (vpp_obj->iVppFeatureCfg[0] & VPP_FEATURE_MIPI_DSI) {
+            /*Handle dynamic switching between DSI & HDMI*/
+            if(IS_DSI_PANEL_RES(resID)) {
+                VPP_BE_MIPI_PanelInit(vpp_obj, (resID - RES_MIN_DSI));
+            } else {
+                if (!(vpp_obj->iVppFeatureCfg[0] & VPP_FEATURE_HDMITX)) {
+                    VPPAPI_DBG_ERROR("Invalid MIPI-DSI Res ID = %d\n", resID);
+                    return (MV_VPP_EBADPARAM);
+                }
+            }
         }
 
         if (resID != RES_RESET) {

@@ -574,7 +574,12 @@ int VPP_BE_GetHdmiIrqSource(VPP_OBJ *vpp_obj);
 
 int VPP_BE_MIPIOBJ_Create(VPP_OBJ *vpp_obj);
 
+int VPP_BE_MIPIOBJ_Config(VPP_OBJ *vpp_obj);
+
 int VPP_BE_MIPI_PanelInit(VPP_OBJ *vpp_obj, int PanelID);
+
+int VPP_BE_MIPI_PanelDeInit(VPP_OBJ *vpp_obj);
+
 int VPP_BE_MIPI_PanelStandby(VPP_OBJ *vpp_obj, int PanelID);
 
 BOOL VPP_BE_GetHdmiPhyExpectedState(VPP_OBJ *vpp_obj);

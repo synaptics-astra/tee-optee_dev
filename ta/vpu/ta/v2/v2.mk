@@ -1,5 +1,6 @@
 my_path := $(abspath $(lastword $(MAKEFILE_LIST)))
-cur_dir := $(dir $(my_path))
+# end without slash
+cur_dir := $(patsubst %/,%,$(dir $(my_path)))
 
 TA_SRC_FILES += $(wildcard $(cur_dir)/src/*.c) \
                 $(cur_dir)/../common/src/vmeta_log.c \

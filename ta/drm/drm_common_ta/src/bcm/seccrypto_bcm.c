@@ -947,3 +947,63 @@ HRESULT BCM_WRITE_RKEKID(UINT8 *AddrRKEKID, UINT32 uRKEKIDLen)
     return status.return_status;
 
 }
+
+/*
+ * Function: HRESULT BCM_OTP_READ(UINT32 type, UINT32 *pdata, UINT32 *pmask)
+ *
+ *   PI is called to read OTP data.
+ *
+ * Arguments:
+ * - type (IN)   - Type of OTP data to read
+ * - pdata (OUT)  - Buffer to store the read OTP data
+ * - pmask (OUT)  - Buffer to store the mask for the read OTP data
+ *
+ * Returns:
+ *   SUCCESS or one of the BCM error code
+ */
+HRESULT BCM_READ_OTP(UINT32 type, UINT32 *pdata, UINT32 *pmask)
+{
+    BCM_MAILBOX_COMMAND cmd;
+    BCM_MAILBOX_STATUS status;
+
+    bcm_clear_command(&cmd);
+    bcm_clear_status(&status);
+    cmd.arg0 = type;
+    cmd.arg1 = (UINT)TEE_VirtToPhys(pdata);
+    cmd.arg2 = (UINT)TEE_VirtToPhys(pmask);
+    cmd.command = DRM_OTP_UTILS_OTP_READ;
+
+    execute_bcm_command(&cmd, &status);
+
+    return status.return_status;
+}
+
+/*
+ * Function: HRESULT BCM_WRITE_OTP(UINT32 type, UINT32 data, UINT32 mask)
+ *
+ *   PI is called to write OTP data.
+ *
+ * Arguments:
+ * - type (IN)   - Type of OTP data to write
+ * - data (IN)   - OTP data to write
+ * - mask (IN)   - mask for the OTP data
+ *
+ * Returns:
+ *   SUCCESS or one of the BCM error code
+ */
+HRESULT BCM_WRITE_OTP(UINT32 type, UINT32 data, UINT32 mask)
+{
+    BCM_MAILBOX_COMMAND cmd;
+    BCM_MAILBOX_STATUS status;
+
+    bcm_clear_command(&cmd);
+    bcm_clear_status(&status);
+    cmd.arg0 = type;
+    cmd.arg1 = data;
+    cmd.arg2 = mask;
+
+    cmd.command = DRM_OTP_UTILS_OTP_WRITE;
+    execute_bcm_command(&cmd, &status);
+
+    return status.return_status;
+}

@@ -19,7 +19,7 @@
 #include "vpp_env_ur.h"
 #include "ovps_api.h"
 #include "vpp_ptm.h"
-#include "tee_ta_vpp_porting.h"
+#include "vpp_clk.h"
 #include "vpp_debug_util.h"
 #include "outctrl_cmd.h"
 #include "vpp_obj.h"

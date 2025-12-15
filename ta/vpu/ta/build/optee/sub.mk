@@ -1,5 +1,6 @@
 my_path := $(abspath $(lastword $(MAKEFILE_LIST)))
-cur_dir := $(dir $(my_path))
+# end without slash
+cur_dir := $(patsubst %/,%,$(dir $(my_path)))
 
 include $(CURDIR)/build/common/chip.mk
 

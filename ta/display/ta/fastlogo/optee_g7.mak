@@ -95,6 +95,9 @@ TA_CFLAGS += -DVPP_OTP_GET_PROPERTY_FROM_DRMSE_TA
 #TA_CFLAGS += -DVPP_TEST_APP
 
 #TA_CFLAGS += -Werror -DSoC_Galois -D__CODE_LINK__=0 -Wno-error=overflow
+TA_CFLAGS += -DVPP_SUS_RES
+TA_CFLAGS += -DVPP_SUSPEND_RESUME_CLKGATE_ENABLE
+TA_CFLAGS += -DVPP_ENABLE_AVIO_RESET_DURING_SUSPEND_RESUME
 
 TA_C_INCLUDES  += $(TA_PATH)
 TA_C_INCLUDES  += $(TA_PATH)/optee
@@ -202,6 +205,7 @@ TA_SRC_FILES += $(wildcard $(VPPTA_SPECIFIC_FOLDER)/source/vpp_cfg.c)
 TA_SRC_FILES += $(wildcard $(VPPTA_SPECIFIC_FOLDER)/source/vpp_fe.c)
 TA_SRC_FILES += $(wildcard $(VPPTA_SPECIFIC_FOLDER)/source/vpp_scl.c)
 TA_SRC_FILES += $(wildcard $(VPPTA_SPECIFIC_FOLDER)/source/vpp_offlineScl.c)
+TA_SRC_FILES += $(wildcard $(VPPTA_SPECIFIC_FOLDER)/source/vpp_clk.c)
 
 ifeq ($(SoC_Ver)$(SoC_Subversion), $(filter $(SoC_Ver)$(SoC_Subversion), $(G7_CHIP_LIST)))
 TA_SRC_FILES += $(wildcard $(VPPTA_SPECIFIC_FOLDER)/source/vpp_avioMtr.c)

@@ -392,6 +392,18 @@ TEE_Result TA_EXPORT TA_InvokeCommandEntryPoint(void *sessionContext,
         }
         break;
 
+        case VPP_SUSPEND:
+        {
+            params[0].value.a = MV_VPPOBJ_Suspend(0, params[0].value.b);
+        }
+        break;
+
+        case VPP_RESUME:
+        {
+            params[0].value.a = MV_VPPOBJ_Resume(0, params[0].value.b);
+        }
+        break;
+
         default:
         res = TEE_ERROR_NOT_SUPPORTED;
         break;

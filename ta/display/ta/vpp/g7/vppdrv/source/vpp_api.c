@@ -24,7 +24,7 @@
 #include "vpp_avioMtr.h"
 #include "vpp_cmu.h"
 #include "vpp_intr_util.h"
-#include "tee_ta_vpp_porting.h"
+#include "vpp_clk.h"
 #include "vpp_be_hdcp.h"
 #include "vpp_dv_api.h"
 
@@ -1475,7 +1475,9 @@ int MV_VPPOBJ_Resume(int handle, BOOL optimize)
 
     MV_VPPOBJ_Config(handle, vinport_cfg, dv_cfg, zorder_cfg, voutport_cfg, vpp_sus->iVppFeatureCfg);
     VPP_BE_Resume(vpp_obj);
-    VPP_BE_MIPI_DsiInit(vpp_obj);
+
+    if (vpp_obj->iVppFeatureCfg[0] & VPP_FEATURE_MIPI_DSI)
+        VPP_BE_MIPI_DsiInit(vpp_obj);
 
     /* 1. Resuming CPCBs */
     for (cpcbID=FIRST_CPCB; cpcbID<MAX_NUM_CPCBS; cpcbID++)
@@ -2379,6 +2381,11 @@ int MV_VPPOBJ_Config(int handle, const int *pvinport_cfg, const int *pdv_cfg, co
 
     if(!(pfeature_cfg[0] & VPP_FEATURE_HDMITX))
         VPP_BE_HdmiPowerDown(vpp_obj);
+
+    VPP_BE_MIPIOBJ_Config(vpp_obj);
+
+    if (!(pfeature_cfg[0] & VPP_FEATURE_MIPI_DSI))
+        VPP_BE_MIPI_PanelDeInit(vpp_obj);
 
     VPP_Memcpy(vpp_obj->iVppFeatureCfg, pfeature_cfg, sizeof(vpp_obj->iVppFeatureCfg));
     /* set VPP module to be configured */
@@ -4096,9 +4103,16 @@ int MV_VPPOBJ_SetCPCBOutputResolution(int handle, int cpcbID, int resID, int bit
     VPP_ResetPlane(vpp_obj, uiDisplayMode);
     vpp_obj->m_VoutMode = uiDisplayMode;
 
-    /*Handle dynamic switching between DSI & HDMI*/
-    if(IS_DSI_PANEL_RES(resID)) {
-        VPP_BE_MIPI_PanelInit(vpp_obj, (resID - RES_MIN_DSI));
+    if (vpp_obj->iVppFeatureCfg[0] & VPP_FEATURE_MIPI_DSI) {
+        /*Handle dynamic switching between DSI & HDMI*/
+        if(IS_DSI_PANEL_RES(resID)) {
+            VPP_BE_MIPI_PanelInit(vpp_obj, (resID - RES_MIN_DSI));
+        } else {
+            if (!(vpp_obj->iVppFeatureCfg[0] & VPP_FEATURE_HDMITX)) {
+                VPPAPI_DBG_ERROR("Invalid MIPI-DSI Res ID = %d\n", resID);
+                return (MV_VPP_EBADPARAM);
+            }
+        }
     }
 
     if (resID != RES_RESET) {
@@ -8753,9 +8767,16 @@ int MV_VPPOBJ_SetFormat(int handle, int cpcbID, VPP_DISP_OUT_PARAMS *pDispParams
         VPP_ResetPlane(vpp_obj, uiDisplayMode);
         vpp_obj->m_VoutMode = uiDisplayMode;
 
-        /*Handle dynamic switching between DSI & HDMI*/
-        if(IS_DSI_PANEL_RES(resID)) {
-            VPP_BE_MIPI_PanelInit(vpp_obj, (resID - RES_MIN_DSI));
+        if (vpp_obj->iVppFeatureCfg[0] & VPP_FEATURE_MIPI_DSI) {
+            /*Handle dynamic switching between DSI & HDMI*/
+            if(IS_DSI_PANEL_RES(resID)) {
+                VPP_BE_MIPI_PanelInit(vpp_obj, (resID - RES_MIN_DSI));
+            } else {
+                if (!(vpp_obj->iVppFeatureCfg[0] & VPP_FEATURE_HDMITX)) {
+                    VPPAPI_DBG_ERROR("Invalid MIPI-DSI Res ID = %d\n", resID);
+                    return (MV_VPP_EBADPARAM);
+                }
+            }
         }
 
         if (resID != RES_RESET) {

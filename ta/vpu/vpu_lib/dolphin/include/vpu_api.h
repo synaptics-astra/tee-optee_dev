@@ -148,16 +148,6 @@ TYPEDEF_STRUCT(dma_drv_cfg_t)
 };
 
 //---------------------------------------------------------------------------
-//! \brief        Linear Memory Structure
-//---------------------------------------------------------------------------
-TYPEDEF_STRUCT(g1dec_linear_mem)
-{
-    unsigned int   *virtualAddress;
-    unsigned int    busAddress;
-    unsigned int    size;
-};
-
-//---------------------------------------------------------------------------
 //! \brief      Stream-independent VPU Settings
 //---------------------------------------------------------------------------
 TYPEDEF_STRUCT(vpu_config_t)
@@ -552,7 +542,7 @@ TYPEDEF_STRUCT(vdec_strm_config_t)
     unsigned int    av1_lgst_param;         //!< av1 large scale tile parameters
     unsigned char   shuffle_en;             //!< enable address shuffle
     unsigned char   fast_channel_zapping;   //!< Reduce the channel zapping time by releasing the first decoded frame immediately.
-    unsigned char   mtu_dhub;               //!< MTU for the PFU output channel and VCU input channel in dHub. 0: default, 1~10: 8B | 16B | 32B | 64B | 128B | 256B | 512B | 1024B | 2048B | 4096B
+    unsigned char   mtu_dhub;               //!< MTU for the PFU output channel and VCU input channel in dHub. 0: default(128B), 1~10: 8B | 16B | 32B | 64B | 128B | 256B | 512B | 1024B | 2048B | 4096B
     unsigned char   fast_mode;              //!< FW recycles the reference and display buffers internally. 0: off, 1: on
     unsigned char   mtr_force_uncmpr;       //!< 1: force all the pixel data in frame buffer to be uncompressed
     unsigned char   overallocation_mode;    //!< When overallocation enabled, 0: over-allocate reference and display buffers; 1: over-allocate reference buffers only; 2: over-allocate display buffers only.
@@ -778,14 +768,6 @@ TYPEDEF_STRUCT(vdec_pic_desc_t)
 
     // for av1 only
     void           *film_grain_params;      //!< Pointer to film grain parameters.
-};
-
-//---------------------------------------------------------------------------
-//! \brief      Side Information for Video Display Buffer
-//---------------------------------------------------------------------------
-TYPEDEF_STRUCT(vdec_dbuf_side_info_t)
-{
-    vdec_pic_desc_t pic[2];                 //!< Picture descriptor pair. [0]: frame/top, [1]: bottom.
 };
 
 //---------------------------------------------------------------------------
@@ -1514,8 +1496,6 @@ enum
     VENC_REFRESH                 = 2,
     VENC_REFERENCE_AND_REFRESH   = 3,
 };
-
-#define SIZEOF_COMMON_PACKET_HEADER (16)
 
 //---------------------------------------------------------------------------
 // Video Encoder API
