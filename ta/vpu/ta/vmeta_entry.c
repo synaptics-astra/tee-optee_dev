@@ -153,9 +153,9 @@ static inline int vpu_register_resource(VPU_SESSION_CTX *ctx)
 
     ctx->vpu_clk_ctrl_base = (void *)((uintptr_t)gbl_ctrl_va + clk_offset);
 
-    TA_LOGI("global 0x%x(%p), reg 0x%x(%p), clk %p\n", gbl_ctrl_base,
-            ctx->gbl_ctrl_base, ctx->io_base_phy, ctx->io_base,
-            ctx->vpu_clk_ctrl_base);
+    TA_LOGI("global %p(v:%p), reg 0x%x(%p), clk %p\n",
+            (void *)(uintptr_t)gbl_ctrl_base, ctx->gbl_ctrl_base,
+            ctx->io_base_phy, ctx->io_base, ctx->vpu_clk_ctrl_base);
     /**
      * Enable clock
     */
@@ -165,6 +165,8 @@ static inline int vpu_register_resource(VPU_SESSION_CTX *ctx)
 /*********************** Local function definition End ************************/
 
 /********************** Export function definition Start **********************/
+int vprintf(const char *format, va_list arg);
+int vsprintf(char *str, const char *format, va_list arg);
 int vprintf(const char *format, va_list arg)
 {
     return 0;

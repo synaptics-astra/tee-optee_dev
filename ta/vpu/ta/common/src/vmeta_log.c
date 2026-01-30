@@ -137,6 +137,7 @@ int wrap_set_level(uint32_t level)
 }
 
 #ifdef ENABLE_TA_LOG
+__attribute__((format(printf, 4, 5)))
 void vmeta_ta_log(uint32_t level, const char *func, uint32_t line,
                   const char *format, ...)
 {
@@ -146,7 +147,7 @@ void vmeta_ta_log(uint32_t level, const char *func, uint32_t line,
 
     if ((1 << level) & level_ta) {
         va_start(ap, format);
-        snprintf(head, AMP_LOG_HSZ, "%sAmp%ld@@[TA_VMETA:%s():%ld]%s ",
+        snprintf(head, AMP_LOG_HSZ, "%sAmp%" PRIu32 "@@[TA_VMETA:%s():%" PRIu32 "]%s ",
                  lead_color[level], level, func, line, reset_color);
         vsnprintf(log_buf, AMP_LOG_HSZ, format, ap);
         TA_LOGL("%s%s\n", head, log_buf);
@@ -162,7 +163,7 @@ void vmeta_ta_log(uint32_t level, const char *func, uint32_t line,
  * So it's meaningless to keep complex log level control here;
  */
 #ifdef DYNAMIC_LOG_LEVEL
-
+__attribute__((format(printf, 1, 2)))
 void vMetaFwPrint(const char *format, ...)
 {
     va_list ap;
@@ -188,6 +189,7 @@ void vMetaFwPrint(const char *format, ...)
     }
 }
 #else  //print all vpu log
+__attribute__((format(printf, 1, 2)))
 void vMetaFwPrint(const char *format, ...)
 {
     char log[512];
@@ -199,7 +201,8 @@ void vMetaFwPrint(const char *format, ...)
 }
 #endif //end of DYNAMIC_LOG_LEVEL
 
-extern vpu_perf_dbg_t g_v2g_perf_obj;
+// extern vpu_perf_dbg_t g_v2g_perf_obj;
+// declared in vpu_dbg.h, leave here for readniess
 
 #if defined(ENABLE_VPU_PROFILING)
 void vpu_perf_log(void* inst)

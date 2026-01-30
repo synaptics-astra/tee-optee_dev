@@ -29,11 +29,13 @@
 /* Crypto related command dispatcher
  *
  * Arguments:
+ * - commandID      (IN) - command related with CRYPTO
  * - params[4]      (IN) - parameters from normal world
  *
  * Return:
  * TEE_SUCCESS or one of the TEE error code
  */
-TEE_Result Drm_Sign_Verify_Message(TEE_Param params[4] );
+TEE_Result MV_DRM_CRYPTO_InvokeCommandEntryPoint(uint32_t commandID,
+                                              TEE_Param params[4]);
 
 #endif /* __FACTORY_CRYPTO_H__ */

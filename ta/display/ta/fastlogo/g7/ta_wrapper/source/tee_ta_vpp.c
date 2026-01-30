@@ -322,8 +322,9 @@ TEE_Result TA_EXPORT TA_InvokeCommandEntryPoint(void *sessionContext,
 #endif
 
         case VPP_HANDLEINT:
-        /*params[1].value.a = */VPP_ISR_Handler(params[0].value.a,
-                                            params[0].value.b);
+        VPP_ISR_Handler(params[0].value.a, params[0].value.b);
+        //return success
+        params[1].value.a = 0;
         break;
 
         case VPP_RECYCLEFRAME:

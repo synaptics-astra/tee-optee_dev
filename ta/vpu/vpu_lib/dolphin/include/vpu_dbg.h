@@ -1,7 +1,7 @@
 /*
 * NDA AND NEED-TO-KNOW REQUIRED
 *
-* Copyright (C) 2013-2017 Synaptics Incorporated. All rights reserved.
+* Copyright (C) 2013-2026 Synaptics Incorporated. All rights reserved.
 *
 * This file contains information that is proprietary to Synaptics
 * Incorporated ("Synaptics"). The holder of this file shall treat all

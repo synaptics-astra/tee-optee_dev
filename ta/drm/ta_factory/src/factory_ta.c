@@ -57,19 +57,6 @@ void TA_EXPORT TA_CloseSessionEntryPoint(void *sessionContext)
     return;
 }
 
-#ifndef CONFIG_OPTEE
-TEE_Result HandleCryptoCommand(uint32_t commandID, TEE_Param params[4])
-{
-    TEE_Result result = TEE_SUCCESS;
-    if(DRM_SE_RSA_SIGN_VERIFY == commandID) {
-        result = Drm_Sign_Verify_Message(params);
-    } else {
-        FACTORY_ERR("factory :%s:commandID=%x is not supported\n", __func__, (unsigned int)commandID);
-    }
-    return result;
-}
-#endif
-
 /* Invoke a command within a given session */
 TEE_Result TA_EXPORT TA_InvokeCommandEntryPoint(void *sessionContext,
                                                 uint32_t commandID,
@@ -93,11 +80,9 @@ TEE_Result TA_EXPORT TA_InvokeCommandEntryPoint(void *sessionContext,
         case OTP_MASK:
             result = MV_DRM_OTP_InvokeCommandEntryPoint(commandID, params);
             break;
-#ifndef CONFIG_OPTEE
         case CRYPTO_MASK:
-            result = HandleCryptoCommand(commandID, params);
+            result = MV_DRM_CRYPTO_InvokeCommandEntryPoint(commandID, params);
             break;
-#endif
         case RPMB_MASK:
             result = MV_DRM_RPMB_InvokeCommandEntryPoint(commandID, params);
             break;

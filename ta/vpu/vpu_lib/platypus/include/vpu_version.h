@@ -1,7 +1,7 @@
 /*
 * NDA AND NEED-TO-KNOW REQUIRED
 *
-* Copyright (C) 2013-2017 Synaptics Incorporated. All rights reserved.
+* Copyright (C) 2013-2026 Synaptics Incorporated. All rights reserved.
 *
 * This file contains information that is proprietary to Synaptics
 * Incorporated ("Synaptics"). The holder of this file shall treat all
@@ -35,6 +35,6 @@
 #ifndef _VPU_VERSION_H_
 #define _VPU_VERSION_H_
 
-#define VPU_LIB_VERSION 34822
+#define VPU_LIB_VERSION 34869
 
 #endif

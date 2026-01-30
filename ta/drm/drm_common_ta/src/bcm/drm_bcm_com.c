@@ -207,3 +207,23 @@ void execute_bcm_command(BCM_MAILBOX_COMMAND *pcmd,
     }
     return;
 }
+
+/** Execute bcm command.
+ *
+ * @param pcmd  packed bcm command.
+ * @retval S_OK         on success
+ */
+void execute_bcm_command_Ex(BCM_MAILBOX_COMMAND *pcmd,
+                         BCM_MAILBOX_STATUS *status, UINT32 delay)
+{
+    TEE_Result ret = TEE_SUCCESS;
+
+    ret = TEE_ExecCmdEx(pcmd->command, (void *)pcmd,
+                      sizeof(BCM_MAILBOX_COMMAND) - sizeof(UINT32),
+                      (void*)status, sizeof(*status), delay);
+    if (ret != TEE_SUCCESS) {
+        DRM_LOG("TADEV: execute_bcm_command_Ex: TEE_ExecCmd_Ex(%x) returned %x\n",
+                pcmd->command, status->return_status);
+    }
+    return;
+}

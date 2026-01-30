@@ -392,7 +392,6 @@ HRESULT BCM_HDCP1X_LOADTXKEY(UINT8* AddrKey, UINT32 uKeySize)
  * Return:
  *         STATUS_SUCCESS or one of the BCM error code
  */
-#ifndef CONFIG_OPTEE
 HRESULT BCM_HDCP1X_LOADRXKEY(UINT8* AddrKey, UINT32 uKeySize)
 {
     BCM_MAILBOX_COMMAND cmd;
@@ -416,7 +415,6 @@ HRESULT BCM_HDCP1X_LOADRXKEY(UINT8* AddrKey, UINT32 uKeySize)
 
     return status.return_status;
 }
-#endif
 
 /*
  * Function: BCM_HDCP2X_LOADLC

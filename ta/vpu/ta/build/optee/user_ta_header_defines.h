@@ -49,7 +49,7 @@
  * TA_FLAG_EXEC_DDR is meaningless but mandated.
  */
 #define TA_FLAGS                                                               \
-    TA_FLAG_EXEC_DDR | TA_FLAG_SECURE_DATA_PATH | TA_FLAG_CACHE_MAINTENANCE
+    (TA_FLAG_EXEC_DDR | TA_FLAG_SECURE_DATA_PATH | TA_FLAG_CACHE_MAINTENANCE)
 
 /* Provisioned stack size */
 #define TA_STACK_SIZE (16 * 1024)

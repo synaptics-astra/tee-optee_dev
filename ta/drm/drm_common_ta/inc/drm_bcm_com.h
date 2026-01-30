@@ -160,4 +160,6 @@ HRESULT drm_bcm_exec_cmd_base(UINT8* pshm, BCM_MAILBOX_COMMAND *pcmd,
 void execute_bcm_command(BCM_MAILBOX_COMMAND *pcmd,
                          BCM_MAILBOX_STATUS *status);
 
+void execute_bcm_command_Ex(BCM_MAILBOX_COMMAND *pcmd,
+                         BCM_MAILBOX_STATUS *status, UINT32 delay);
 #endif  //__DRM_BCM_COM_H__

@@ -28,6 +28,7 @@
 //!
 //!  Note:
 ////////////////////////////////////////////////////////////////////////////////
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -45,8 +46,9 @@
 #include <vpu_ta_common.h>
 
 #include <queue.h>
-#include "vpu_fw_data.h"
 #include "mem_utils.h"
+#include "vmeta_v2.h"
+#include "vpu_fw_data.h"
 
 #ifdef CONFIG_OPTEE
 #include "vpu_plugin.h"
@@ -208,7 +210,16 @@ struct i_vpu_ctx {
     bool enc_ds_en;
     i_venc_head_mgr_t header_mgr;
     bool vp8_enc;
+    bool meta_mv_en;
 };
+
+typedef struct __MV_Info_t {
+    uint8_t mbMode; /*6:P16x16, 7:P16x8, 8:P8x16, 9:P8x8*/
+    uint8_t reserved;
+    uint16_t mbCount;
+    int8_t mvY[4];
+    int16_t mvX[4];
+}MVInfo_t;
 
 typedef struct {
     uint32_t command_id;
@@ -335,7 +346,7 @@ static inline void idx_queue_clear(struct idx_queue *q)
     memset(q, 0, sizeof(*q));
 }
 
-static int inline release_internal_ctx(VPU_SESSION_CTX *session,
+static inline int release_internal_ctx(VPU_SESSION_CTX *session,
                                        struct syna_vpu_ctrl *ctrl,
                                        struct i_vpu_ctx **ctx)
 {
@@ -352,7 +363,7 @@ static int inline release_internal_ctx(VPU_SESSION_CTX *session,
     return TEE_ERROR_CORRUPT_OBJECT;
 }
 
-static int inline get_internal_ctx(VPU_SESSION_CTX *session,
+static inline int get_internal_ctx(VPU_SESSION_CTX *session,
                                    struct syna_vpu_ctrl *ctrl,
                                    struct i_vpu_ctx **ctx)
 {
@@ -369,6 +380,45 @@ static int inline get_internal_ctx(VPU_SESSION_CTX *session,
     return TEE_ERROR_CORRUPT_OBJECT;
 }
 
+static void get_motion_vector(struct syna_vpu_ctrl *ctrl, uint32_t idx,
+                              venc_seq_desc_t *seq_desc) {
+    uint32_t mbInfoSize = 0;
+    uint32_t mv_size = sizeof(MVInfo_t);
+    const vpu_hw_info_t *p_vpu_info = vpu_get_hw_info();
+    /**
+    * https://synaptics.atlassian.net/wiki/spaces/IOT/pages/40071266437/encoder+Motion+vector
+    */
+    if (p_vpu_info->hw_version == 0x70000) // 680 h1v5
+        mbInfoSize = 32;
+    else if (p_vpu_info->hw_version == 0x70001) // 640 h1v7
+        mbInfoSize = 48;
+
+    uint32_t mbPerRow = (seq_desc->width + 15) / 16;
+    uint32_t mbPerCol = (seq_desc->height + 15) / 16;
+    uint32_t mbPerFrame = mbPerRow * mbPerCol;
+    struct syna_vpu_tz_buf *buf = &ctrl->outbufs[idx];
+    char *dst = (char *)buf->planes[1].vaddr;
+    char *mbInfo = seq_desc->mb_info;
+    if (!dst || !mbInfo) {
+        TA_LOGL("err: no vir addr for plane1 %p %p %p\n", dst, seq_desc,
+                mbInfo);
+        return;
+    }
+    if (buf->planes[1].size < mbPerFrame * mv_size) {
+        TA_LOGL("err: no enough space for motion vector\n");
+        return;
+    }
+    //copy first 16 bytes for motion vector
+    for (uint32_t i = 0; i < mbPerFrame; i++) {
+        memcpy(dst, mbInfo, mv_size);
+        dst += mv_size;
+        mbInfo += mbInfoSize;
+    }
+    buf->bytesused[1] = mbPerFrame * mv_size;
+    VMETA_LOGD("get motion vector done (%d * %d) = %d bytes\n", mbPerFrame,
+            mv_size, mbPerFrame * mv_size);
+    return;
+}
 /*
  * validate the security rules of a syna_vpu_tz_buf
  * @return return true when the buffer follows all the security
@@ -601,9 +651,9 @@ static uint32_t h1_malloc(uint32_t size)
     return (uintptr_t) TEE_Malloc(size, TEE_MALLOC_FLAG_DEFAULT);
 }
 
-static void h1_free(uint32_t vaddr)
+static void h1_free(void* vaddr)
 {
-    TEE_Free((void*)vaddr);
+    TEE_Free(vaddr);
 }
 
 static TEE_Result ta_vpu_open(VPU_SESSION_CTX * session_ctx,
@@ -765,7 +815,7 @@ static TEE_Result ta_vdec_create_instance(VPU_SESSION_CTX * session_ctx,
     TEE_MemMove(&(ctrl->ctx_buf), &tzmem, sizeof(tzmem));
     ctx->is_encoder = false;
 
-    ctx->desc_pool = (void *)ctx + size;
+    ctx->desc_pool = (void *)((uintptr_t)ctx + size);
     size += sizeof(i_vdec_pool_t);
 
     size = ALIGN(size, 4096);
@@ -775,10 +825,10 @@ static TEE_Result ta_vdec_create_instance(VPU_SESSION_CTX * session_ctx,
         goto failed_ctx;
     }
     /* Fixed offset */
-    ctx->strm_ctx = ((void *)ctx + BERLIN_VPU_CTX_RESERVED_SIZE);
+    ctx->strm_ctx = ((void *)((uintptr_t)ctx + BERLIN_VPU_CTX_RESERVED_SIZE));
     ctx->ctx_hw_buf.addr = ctx->buf.addr + BERLIN_VPU_CTX_RESERVED_SIZE
                                          + ctx_size;
-    ctx->ctx_hw_buf.vaddr = (uintptr_t)(ctx->strm_ctx + ctx_size);
+    ctx->ctx_hw_buf.vaddr = (uintptr_t)((uintptr_t)ctx->strm_ctx + ctx_size);
     ctx->ctx_hw_buf.size = ctx_hw_size;
 
     if (vpuObjMgrSet(session_ctx->objMgr, (void *)((uintptr_t)ctrl->ctrl_buf.addr), ctx) < 0) {
@@ -887,6 +937,11 @@ static TEE_Result ta_vdec_config_stream(VPU_SESSION_CTX * session_ctx,
     ctx->fw_pixel_mode = pStrmcfg->output_mode;
 
     if (!pStrmcfg->user_data) {
+        VMETA_LOGI("opt_params: dv=%d,dvMode=%d,hdr10+=%d,noReorder=%d,lowLatency=%d\n",
+            ctrl->v4g_ext_cfg.opt.dvEn, ctrl->v4g_ext_cfg.opt.dvMode,
+            ctrl->v4g_ext_cfg.opt.hdr10PlusEn, ctrl->v4g_ext_cfg.opt.noReorder,
+            ctrl->v4g_ext_cfg.opt.lowLatencyEn);
+
         ctx->codec_fmt = pStrmcfg->format;
 
         pStrmcfg->user_data = ctrl;
@@ -1025,7 +1080,8 @@ static int vdec_push_disp_buf(struct i_vpu_ctx *ctx,
         return 0;
 
     /* NOTE: AV1 won't reach here */
-    if (queue_fifo_p_push(&ctx->sink_bufs, (uintptr_t *)&buf))
+    uintptr_t tmp_ptr = (uintptr_t)buf;
+    if (queue_fifo_p_push(&ctx->sink_bufs, &tmp_ptr))
         return TEE_ERROR_OVERFLOW;
 
     return 0;
@@ -1149,11 +1205,15 @@ static int vdec_tag_tu_output_timestamp(struct i_vpu_ctx *ctx,
                                         struct syna_vpu_tz_buf *dst_buf)
 {
     struct syna_vpu_tz_buf *src_buf;
+    uintptr_t tmp_ptr = 0;
     int ret = 0;
 
     if (queue_fifo_p_count(&ctx->src_bufs)) {
-        queue_fifo_p_pop(&ctx->src_bufs, (uintptr_t *) &src_buf);
-        dst_buf->timestamp = src_buf->timestamp;
+        queue_fifo_p_pop(&ctx->src_bufs, &tmp_ptr);
+        if (tmp_ptr) {
+            src_buf = (struct syna_vpu_tz_buf *)tmp_ptr;
+            dst_buf->timestamp = src_buf->timestamp;
+        }
     } else {
         VMETA_LOGE("missing src buf for timestamp here");
         ret = TEE_ERROR_SHORT_BUFFER;
@@ -1357,13 +1417,13 @@ static int vdec_loop_pop_es_buf(struct syna_vpu_ctrl *ctrl,
     do {
         ret = vdec_pop_es_buf(ctx, ctrl, &idx);
 
-        if (TEE_ERROR_BUSY == ret) {
+        if ((int)TEE_ERROR_BUSY == ret) {
             if (!q->pop) {
                 VMETA_LOGE("can't pop any buffer from FW, why this event?");
                 ret = TEE_ERROR_NO_DATA;
             }
             break;
-        } else if (TEE_ERROR_NO_DATA == ret) {
+        } else if ((int)TEE_ERROR_NO_DATA == ret) {
             VMETA_LOGE("loop_pop_es try to pop empty queue");
             break;
         } else {
@@ -1387,13 +1447,13 @@ static int vdec_loop_pop_ref_buf(struct syna_vpu_ctrl *ctrl,
     do {
         ret = vdec_pop_ref_buf(ctx, ctrl, &idx);
 
-        if (TEE_ERROR_BUSY == ret) {
+        if ((int)TEE_ERROR_BUSY == ret) {
             if (!q->pop) {
                 VMETA_LOGE("can't pop any buffer from FW, why this event?");
                 ret = TEE_ERROR_NO_DATA;
             }
             break;
-        } else if (TEE_ERROR_NO_DATA == ret) {
+        } else if ((int)TEE_ERROR_NO_DATA == ret) {
             VMETA_LOGE("loop_pop_ref try to pop empty queue");
             break;
         } else {
@@ -1417,13 +1477,13 @@ static int vdec_loop_pop_disp_buf(struct syna_vpu_ctrl *ctrl,
     do {
         ret = vdec_pop_disp_buf(ctx, ctrl, &idx);
 
-        if (TEE_ERROR_BUSY == ret) {
+        if ((int)TEE_ERROR_BUSY == ret) {
             if (!q->pop) {
                 VMETA_LOGE("can't pop any buffer from FW, why this event?");
                 ret = TEE_ERROR_NO_DATA;
             }
             break;
-        } else if (TEE_ERROR_NO_DATA == ret) {
+        } else if ((int)TEE_ERROR_NO_DATA == ret) {
             VMETA_LOGE("loop_pop_dis try to pop empty queue");
             break;
         } else {
@@ -1534,10 +1594,15 @@ static int vdec_tag_output_timestamp(struct i_vpu_ctx *ctx,
     /* We don't tag timestamp to those ref only(non-display) frame */
     if (decoded_frame) {
         if (queue_fifo_p_count(&ctx->src_bufs)) {
-            if (!queue_fifo_p_pop(&ctx->sink_bufs,
-                                  (uintptr_t *) &dst_buf)) {
-                queue_fifo_p_pop(&ctx->src_bufs, (uintptr_t *) &src_buf);
-                dst_buf->timestamp = src_buf->timestamp;
+            uintptr_t tmp_ptr = 0;
+            if (!queue_fifo_p_pop(&ctx->sink_bufs, &tmp_ptr)) {
+                dst_buf = (struct syna_vpu_tz_buf *)tmp_ptr;
+                tmp_ptr = 0;
+                queue_fifo_p_pop(&ctx->src_bufs, &tmp_ptr);
+                if (tmp_ptr) {
+                    src_buf = (struct syna_vpu_tz_buf *)tmp_ptr;
+                    dst_buf->timestamp = src_buf->timestamp;
+                }
                 /**
                  * TODO: tag timestamp with the rest of src bufs which
                  * are consisted of this dst buf. Firmware didn't support
@@ -1562,14 +1627,14 @@ static TEE_Result ta_vdec_decode_stream(VPU_SESSION_CTX * session_ctx,
 {
     struct syna_vpu_ctrl *ctrl;
     struct i_vpu_ctx *ctx;
-    vdec_strm_status_t *fw_status;
+    vdec_strm_status_t *fw_status = NULL;
     struct syna_vpu_tz_buf *src_buf;
     vdec_strm_buf_desc_t *src_buf_desc = NULL;
     struct idx_queue *q;
     bool loop = true;
     bool regular_check_display = false;
     int ret;
-    int i;
+    unsigned int i;
 
     ctrl = (struct syna_vpu_ctrl *)params[0].memref.buffer;
 
@@ -1710,7 +1775,8 @@ static TEE_Result ta_vdec_decode_stream(VPU_SESSION_CTX * session_ctx,
 
                 i = src_buf_desc->id;
                 src_buf = &(ctrl->inbufs[i]);
-                queue_fifo_p_push(&ctx->src_bufs, (uintptr_t *) &src_buf);
+                uintptr_t tmp_ptr = (uintptr_t)src_buf;
+                queue_fifo_p_push(&ctx->src_bufs, &tmp_ptr);
             } else {
                 VMETA_LOGE("@err start of pic no src");
             }
@@ -1847,7 +1913,7 @@ static TEE_Result ta_vdec_drain_pool(VPU_SESSION_CTX * session_ctx,
         }
 
         ret = vdec_loop_pop_es_buf(ctrl, ctx);
-        if (ret != TEE_ERROR_NO_DATA && ret) {
+        if (ret != (int)TEE_ERROR_NO_DATA && ret) {
             VMETA_LOGE("vdec pop es buf failed: 0x%08x(%d done)",
                        ret, ctrl->sbuf.pop);
             goto bail;
@@ -1856,14 +1922,14 @@ static TEE_Result ta_vdec_drain_pool(VPU_SESSION_CTX * session_ctx,
         queue_fifo_p_init(&ctx->sink_bufs);
 
         ret = vdec_loop_pop_ref_buf(ctrl, ctx);
-        if (ret != TEE_ERROR_NO_DATA && ret) {
+        if (ret != (int)TEE_ERROR_NO_DATA && ret) {
             VMETA_LOGE("vdec pop ref buf failed: 0x%08x(%d done)",
                        ret, ctrl->rbuf.pop);
             goto bail;
         }
 
         ret = vdec_loop_pop_disp_buf(ctrl, ctx);
-        if (ret != TEE_ERROR_NO_DATA && ret) {
+        if (ret != (int)TEE_ERROR_NO_DATA && ret) {
             VMETA_LOGE("vdec pop disp buf failed: 0x%08x(%d done)",
                        ret, ctrl->dbuf.pop);
             goto bail;
@@ -1882,14 +1948,14 @@ static TEE_Result ta_vdec_drain_pool(VPU_SESSION_CTX * session_ctx,
         }
 
         ret = vdec_loop_pop_ref_buf(ctrl, ctx);
-        if (ret != TEE_ERROR_NO_DATA && ret) {
+        if (ret != (int)TEE_ERROR_NO_DATA && ret) {
             VMETA_LOGE("vdec pop ref buf failed: 0x%08x(%d done)",
                        ret, ctrl->rbuf.pop);
             goto bail;
         }
 
         ret = vdec_loop_pop_disp_buf(ctrl, ctx);
-        if (ret != TEE_ERROR_NO_DATA && ret) {
+        if (ret != (int)TEE_ERROR_NO_DATA && ret) {
             VMETA_LOGE("vdec pop disp buf failed: 0x%08x(%d done)",
                        ret, ctrl->dbuf.pop);
             goto bail;
@@ -1897,6 +1963,9 @@ static TEE_Result ta_vdec_drain_pool(VPU_SESSION_CTX * session_ctx,
 
         ret = vpu_tzmem_put(&ctx->mtr_buf);
 
+        break;
+    default:
+        ret = TEE_ERROR_BAD_PARAMETERS;
         break;
     }
 
@@ -1958,7 +2027,7 @@ static TEE_Result ta_vdec_reset_instance(VPU_SESSION_CTX * session_ctx,
     }
 
     ret = vdec_loop_pop_es_buf(ctrl, ctx);
-    if (ret != TEE_ERROR_NO_DATA && ret) {
+    if (ret != (int)TEE_ERROR_NO_DATA && ret) {
         VMETA_LOGE("vdec pop es buf failed: 0x%08x(%d done)",
                    ret, ctrl->sbuf.pop);
         goto failed;
@@ -1970,14 +2039,14 @@ static TEE_Result ta_vdec_reset_instance(VPU_SESSION_CTX * session_ctx,
     ctrl->sbuf.pop = 0;
 
     ret = vdec_loop_pop_ref_buf(ctrl, ctx);
-    if (ret != TEE_ERROR_NO_DATA && ret) {
+    if (ret != (int)TEE_ERROR_NO_DATA && ret) {
         VMETA_LOGE("vdec pop ref buf failed: 0x%08x(%d done)",
                    ret, ctrl->rbuf.pop);
         goto failed;
     }
 
     ret = vdec_loop_pop_disp_buf(ctrl, ctx);
-    if (ret != TEE_ERROR_NO_DATA && ret) {
+    if (ret != (int)TEE_ERROR_NO_DATA && ret) {
         VMETA_LOGE("vdec pop disp buf failed: 0x%08x(%d done)",
                    ret, ctrl->dbuf.pop);
         goto failed;
@@ -2203,7 +2272,7 @@ static TEE_Result ta_venc_create_instance(VPU_SESSION_CTX * session_ctx,
     TEE_MemMove(&(ctrl->ctx_buf), &tzmem, sizeof(tzmem));
     ctx->is_encoder = true;
 
-    ctx->desc_pool = (void *)ctx + size;
+    ctx->desc_pool = (void *)((uintptr_t)ctx + size);
     size += sizeof(i_venc_pool_t);
 
     size = ALIGN(size, 4096);
@@ -2213,7 +2282,7 @@ static TEE_Result ta_venc_create_instance(VPU_SESSION_CTX * session_ctx,
         goto failed_ctx;
     }
     /* Fixed offset */
-    ctx->strm_ctx = ((void *)ctx + BERLIN_VPU_CTX_RESERVED_SIZE);
+    ctx->strm_ctx = (void *)((uintptr_t)ctx + BERLIN_VPU_CTX_RESERVED_SIZE);
     ctx->ctx_hw_buf.addr = ctx->buf.addr + BERLIN_VPU_CTX_RESERVED_SIZE
                                          + ctx_size;
     ctx->ctx_hw_buf.vaddr = (uintptr_t)ctx->strm_ctx + ctx_size;
@@ -2302,6 +2371,7 @@ static TEE_Result ta_venc_config_stream(VPU_SESSION_CTX * session_ctx,
     ctx->ltr_en = strm_cfg->ref_num_in_buf > 0;
     ctx->merge_header = (ctrl->h1_extra_cfg.header_mode == 1);
     ctx->enc_ds_en = (strm_cfg->ds_width && strm_cfg->ds_height);
+    ctx->meta_mv_en = !!strm_cfg->outputMbInfo;
     if (strm_cfg->format == VENC_FMT_ID_VP8)
         ctx->vp8_enc = true;
 
@@ -2758,7 +2828,7 @@ static TEE_Result ta_venc_encode_stream(VPU_SESSION_CTX * session_ctx,
         case VENC_EVENT_CHECK_DS_BUF:
             ret = venc_pop_ds_buf(ctx, ctrl, &idx);
 
-            if (TEE_ERROR_NO_DATA == ret) {
+            if ((int)TEE_ERROR_NO_DATA == ret) {
                 VMETA_LOGE("no ds buffer for popping.");
             } else if (ret < 0) {
                 ctrl->status.flags |= BERLIN_VPU_STATUS_ERROR;
@@ -2770,7 +2840,7 @@ static TEE_Result ta_venc_encode_stream(VPU_SESSION_CTX * session_ctx,
         case VENC_EVENT_CHECK_VID_BUF:
             ret = venc_pop_frame_buf(ctx, &idx);
 
-            if (TEE_ERROR_NO_DATA == ret) {
+            if ((int)TEE_ERROR_NO_DATA == ret) {
                 VMETA_LOGE("no frame buffer for popping, why this event?");
             } else if (ret < 0) {
                 ctrl->status.flags |= BERLIN_VPU_STATUS_ERROR;
@@ -2782,7 +2852,7 @@ static TEE_Result ta_venc_encode_stream(VPU_SESSION_CTX * session_ctx,
         case VENC_EVENT_CHECK_REF_BUF:
             ret = venc_pop_ref_buf(ctx, &idx);
 
-            if (TEE_ERROR_NO_DATA == ret) {
+            if ((int)TEE_ERROR_NO_DATA == ret) {
                 VMETA_LOGE("no ref buffer for popping, why this event?");
             } else if (ret < 0) {
                 ctrl->status.flags |= BERLIN_VPU_STATUS_ERROR;
@@ -2796,15 +2866,18 @@ static TEE_Result ta_venc_encode_stream(VPU_SESSION_CTX * session_ctx,
             /* NOTE: vmeta encoder should not pop es buffer here */
             ret = venc_pop_es_buf(ctx, ctrl, &idx);
 
-            if (TEE_ERROR_NO_DATA == ret) {
+            if ((int)TEE_ERROR_NO_DATA == ret) {
                 VMETA_LOGE("no es buffer for popping, why this event?");
-            } else if (TEE_ERROR_CANCEL == ret) {
+            } else if ((int)TEE_ERROR_CANCEL == ret) {
                 venc_push_es_buf(ctx, ctrl, idx);
             } else if (ret < 0) {
                 ctrl->status.flags |= BERLIN_VPU_STATUS_ERROR;
                 loop = false;
             } else {
                 idx_queue_store(&ctrl->sbuf, ctrl->sbuf.pop, idx);
+                if (ctx->meta_mv_en) {
+                    get_motion_vector(ctrl, idx, status->seq_desc);
+                }
             }
             break;
         case VENC_EVENT_SWITCH_POINT:
@@ -2819,6 +2892,8 @@ static TEE_Result ta_venc_encode_stream(VPU_SESSION_CTX * session_ctx,
             ctrl->status.flags |= BERLIN_VPU_STATUS_DONE;
             loop = false;
             ret = 0;
+            break;
+        default:
             break;
         }
     } while(loop);

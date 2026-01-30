@@ -198,7 +198,7 @@ enum syna_frame_field {
 };
 
 /* ***VPU firmware APIs begins here*** */
-/* VPU Firmware version: 34822 */
+/* VPU Firmware version: 34869 */
 #ifdef __KERNEL__
 enum syna_dec_channel
 {
@@ -551,6 +551,7 @@ struct syna_venc_strm_config
 	unsigned int matrix_coeffs;
 	unsigned char svctLevel;
 	int svcQpDelta;
+	unsigned char outputMbInfo;
 	unsigned char simulcast;
 	unsigned int sliceSize;
 	unsigned int cirStart;
@@ -726,6 +727,13 @@ struct syna_vpu_ctrl {
 			u32 pm_h_log2_minus2:4;
 			u32 pm_w_log2_minus6:4;
 		} mmu;
+		struct v4g_opt_cfg {
+			u32 dvEn:1;
+			u32 dvMode:4;
+			u32 hdr10PlusEn:1;
+			u32 noReorder:1;
+			u32 lowLatencyEn:1;
+		} opt;
 	} v4g_ext_cfg __attribute__ ((aligned(4)));
 
 	u32 cfg_flags;

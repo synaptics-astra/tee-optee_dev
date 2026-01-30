@@ -58,6 +58,7 @@
 
 //CRYPTO
 #define DRM_SE_RSA_SIGN_VERIFY                      0xD001
+#define DRM_SE_GEN_SECURE_KEY                       0xD002
 
 //RPMB
 #define DRM_SE_RPMB_PAIR_KEY                        0xC001

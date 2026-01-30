@@ -12,20 +12,21 @@
 
 #ifdef TZMEM_DEBUG
 #define TZ_MEM_PRINT(tzmem)                                                    \
-  VMETA_LOGI(                                                                  \
-      "tz-mem: t:%d id:0x%x, p:0x%lx v:%p, sz: 0x%x, off:0x%x, f:0x%x\n",      \
-      (tzmem)->type, (tzmem)->memid, (uint32_t)(tzmem)->addr, (tzmem)->vaddr,  \
-      (tzmem)->size, (tzmem)->offset, (tzmem)->gfp_flags);
+    TA_LOGL("tz-mem: t:%d id:0x%x, p:%" PRIx32                                   \
+          " v:%p, sz: 0x%x, off:0x%x, f:0x%x\n",                               \
+          (tzmem)->type, (tzmem)->memid, (uint32_t)((tzmem)->addr),            \
+          (void *)((tzmem)->vaddr), (tzmem)->size, (tzmem)->offset,            \
+          (tzmem)->gfp_flags);
 
 #define TZ_MEM_GET_TRACE(tzmem)                                                \
   do {                                                                         \
-    VMETA_LOGE("tz-mem get enter %p\n", (tzmem));                              \
+    TA_LOGL("tz-mem get enter %p\n", (tzmem));                              \
     TZ_MEM_PRINT(tzmem);                                                       \
   } while (0)
 
 #define TZ_MEM_PUT_TRACE(tzmem)                                                \
   do {                                                                         \
-    VMETA_LOGE("tz-mem put enter %p\n", (tzmem));                              \
+    TA_LOGL("tz-mem put enter %p\n", (tzmem));                              \
     TZ_MEM_PRINT(tzmem);                                                       \
   } while (0)
 
@@ -52,7 +53,7 @@ static TEE_Result get_tzmem_by_memid(struct syna_tz_generic_buf *tzmem)
     }
 
     if (tzmem->type == MEM_ID_CONTINOUS) {
-        ret = TEE_GetPhys_By_Memid(memid, (void **)&tzmem->addr);
+        ret = TEE_GetPhys_By_Memid(memid, (paddr_t *)&tzmem->addr);
         if (ret) {
             VMETA_LOGE("fail: get phy by memid: %d\n", memid);
             goto failed_unref;
@@ -107,7 +108,7 @@ static TEE_Result get_tzmem_by_phy(struct syna_tz_generic_buf *tzmem)
         return TEE_ERROR_BAD_PARAMETERS;
     }
 
-    ret = TEE_Register_Memory((void *)phy, size, &memid);
+    ret = TEE_Register_Memory((paddr_t)phy, size, &memid);
     if (ret) {
         VMETA_LOGE("fail: phy reg mem 0x%lx %ld\n", phy, size);
         return ret;
@@ -216,7 +217,7 @@ static int reg_vdec_video_buf(struct syna_vpu_tz_buf *buf,
     uintptr_t vaddr;
     u32 offset, offset1;
     int ret;
-    int i;
+    unsigned int i;
 
     for (i = 0; i < video_max_plane; i++) {
         if (i == 2 || i == 3) {
@@ -297,7 +298,7 @@ static int reg_venc_video_buf(struct syna_vpu_tz_buf *buf,
     venc_vid_buf_desc_t *buf_desc;
     const unsigned int video_max_plane = 3;
     int ret;
-    int i;
+    unsigned int i;
 
     for (i = 0; i < video_max_plane; i++) {
         ret = vpu_tzmem_get(&buf->planes[i]);
@@ -359,6 +360,13 @@ static int reg_venc_es_buf(struct syna_vpu_tz_buf *buf,
     if (ret)
         return ret;
 
+    // for export motion vectors
+    if (buf->planes[1].size > 0) {
+        ret = vpu_tzmem_get(&buf->planes[1]);
+        if (ret)
+            return ret;
+    }
+
     TEE_MemFill(buf_desc, 0, sizeof(*buf_desc));
 
     buf_desc->addr = buf->planes[0].addr
@@ -399,31 +407,39 @@ int vpu_unreg_buffer(struct syna_vpu_tz_buf *buf, void *pool, uint32_t idx,
                           uint32_t type)
 {
     void *desc = NULL;
+    uint32_t item_size;
     uint8_t plane_num = 0;
     int i = 0;
     int ret = 0;
 
     switch (type) {
     case ENCODER_PICTURE:
-        desc = (venc_vid_buf_desc_t *)pool;
+        item_size = sizeof(venc_vid_buf_desc_t);
         plane_num = 3;
         break;
     case ENCODER_STREAM:
-        desc = (venc_strm_buf_desc_t *)pool;
+        item_size = sizeof(venc_strm_buf_desc_t);
         plane_num = 1;
+        if (buf->planes[1].size > 0) {
+            plane_num++;
+        }
         break;
     case DECODER_PICTURE:
-        desc = (vdec_vid_buf_desc_t *)pool;
+        item_size = sizeof(vdec_vid_buf_desc_t);
         plane_num = 5;
         break;
     case DECODER_STREAM:
-        desc = (struct i_vdec_bs_buf *)pool;
+        item_size = sizeof(struct i_vdec_bs_buf);
         plane_num = 1;
         break;
+    default:
+        ret = -1;
+        VMETA_LOGE("unknow type %ld\n", type);
+        return ret;
     }
 
-    desc += idx;
-    TEE_MemFill(desc, 0, sizeof(*desc));
+    desc = (void *)((uintptr_t)pool + item_size * idx);
+    TEE_MemFill(desc, 0, item_size);
 
     for (i = 0; i < plane_num; i++) {
         ret = vpu_tzmem_put(&buf->planes[i]);
