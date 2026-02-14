@@ -198,7 +198,7 @@ enum syna_frame_field {
 };
 
 /* ***VPU firmware APIs begins here*** */
-/* VPU Firmware version: 34869 */
+/* VPU Firmware version: 34890 */
 #ifdef __KERNEL__
 enum syna_dec_channel
 {

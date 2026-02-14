@@ -3731,9 +3731,10 @@ static int startChannelDataLoader(VPP_OBJ *vpp_obj, int chanID)
                     plane->ref_win_user_init = 1;
                     plane->ref_win_user.width = VPP_PIP_BUILTIN_FRAME_WIDTH;
                     plane->ref_win_user.height = VPP_PIP_BUILTIN_FRAME_HEIGHT;
-                    VPPAPI_DBG_INFO("VPPDBG: PIP nonbuiltInFrame set to (%d, %d)  vbi_num=%d cpcbID=%d\n",
+                    VPPAPI_DBG_INFO("VPPDBG: PIP builtInFrame set to (%d, %d)  vbi_num=%d cpcbID=%d\n",
                                                 plane->ref_win_user.width, plane->ref_win_user.height, vpp_obj->dv[cpcbID].vbi_num, cpcbID);
-                } else if(VPP_PIP_BUILTIN_FRAME_WIDTH == plane->ref_win_user.width) {
+                } else if (((pinfo->builtinFrame != TRUE)) &&
+                    (VPP_PIP_BUILTIN_FRAME_WIDTH == plane->ref_win_user.width)) {
                     /* Reverting to actual ref window upon receiving a new nonBuiltInFrame*/
                     plane->ref_win_user.width = pinfo->m_active_width;
                     plane->ref_win_user.height = pinfo->m_active_height;

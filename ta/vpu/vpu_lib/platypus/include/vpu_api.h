@@ -259,6 +259,7 @@ typedef vpu_config_t venc_config_t;
 const vpu_hw_info_t *vpu_get_hw_info (void);
 const vpu_const_t *vpu_get_const     (unsigned int hwid);
 int   vpu_open                       (void *vpu_cntxt, vpu_config_t *vpu_config);
+int   vpu_configure                  (void *vpu_cntxt, vpu_config_t *vpu_config);
 int   vpu_close                      (void *vpu_cntxt);
 
 //---------------------------------------------------------------------------
