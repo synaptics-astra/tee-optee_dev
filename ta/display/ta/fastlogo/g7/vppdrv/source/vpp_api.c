@@ -393,6 +393,7 @@ static int ResetCPCBTG(VPP_OBJ *vpp_obj, int cpcbID, int mode)
 
     MV_OSAL_Mutex_Unlock(vpp_obj->dv[cpcb].cmdq_lock);
 
+#ifndef CONFIG_VPP_FASTLOGO_SUPPORT
     VPP_DEBUG_UTIL_monitorResetCPCBStart(vpp_obj, "ResetCPCBTG", VPP_DEBUG_UTIL_BCMBUFF_DUMP_DISABLE);
 
     /* wait for CPCB TG reset done */
@@ -401,7 +402,6 @@ static int ResetCPCBTG(VPP_OBJ *vpp_obj, int cpcbID, int mode)
         MV_OSAL_Task_Sleep(10);
     }
 
-#ifndef CONFIG_VPP_FASTLOGO_SUPPORT
     while(vpp_obj->dv[cpcbID].vbi_num < 1) {
         VPP_DEBUG_UTIL_monitorResetCPCB(vpp_obj, "VBI", VPP_DEBUG_UTIL_BCMBUFF_DUMP_ENABLE);
         MV_OSAL_Task_Sleep(100);
@@ -11126,6 +11126,8 @@ int MV_VPPOBJ_SetFormat(int handle, int cpcbID, VPP_DISP_OUT_PARAMS *pDispParams
     if((pDispParams->uiDispId == VOUT_HDMI) || (uiDisplayMode == VOUT_DISP_SINGLE_MODE_SEC))
         VPP_BE_SetHdmiPhyPower(vpp_obj, FALSE);
 #ifdef CONFIG_VPP_FASTLOGO_SUPPORT
+    if (resID == RES_RESET)
+        goto setFormat_skiphdmi_clear;
     //This is bug fix for LGU - recovery mode shows no signal sometime, solution ensure recieve resync   with transmitter
     /*Disable Scrambling*/
     VPP_BE_HDMI_ScramblingEnable(vpp_obj, FALSE);
@@ -11134,6 +11136,8 @@ int MV_VPPOBJ_SetFormat(int handle, int cpcbID, VPP_DISP_OUT_PARAMS *pDispParams
     {
         MV_OSAL_Task_Sleep(50); //50ms
     }
+
+setFormat_skiphdmi_clear:
 #endif //CONFIG_VPP_FASTLOGO_SUPPORT
 
     /*RES_RESET will not clear output_res, so use output_res_updated to check reset state*/
@@ -11150,33 +11154,32 @@ int MV_VPPOBJ_SetFormat(int handle, int cpcbID, VPP_DISP_OUT_PARAMS *pDispParams
         uiDisplayMode = ((uiDisplayMode == VOUT_DISP_SINGLE_MODE_PRI) &&
                 IS_DSI_PANEL_RES(resID))? VOUT_DISP_SINGLE_MODE_SEC : uiDisplayMode;
 
-        for(i=FIRST_CPCB; i<MAX_NUM_CPCBS; i++)
-        {
-            if (vpp_obj->dv[i].status != STATUS_INACTIVE)
-            {
+        for(i=FIRST_CPCB; i<MAX_NUM_CPCBS; i++) {
+            if (vpp_obj->dv[i].status != STATUS_INACTIVE) {
                 /*Reset both CPCB in case of mode change*/
-                if((vpp_obj->m_VoutMode != uiDisplayMode) || (cpcbID == i)){
+                if((vpp_obj->m_VoutMode != uiDisplayMode) || (cpcbID == i)) {
                     /* reset CPCB TG */
                     ResetCPCBTG(vpp_obj, i, uiDisplayMode);
                 }
             }
         }
-        VPP_ResetPlane(vpp_obj, uiDisplayMode);
-        vpp_obj->m_VoutMode = uiDisplayMode;
-
-        if (vpp_obj->iVppFeatureCfg[0] & VPP_FEATURE_MIPI_DSI) {
-            /*Handle dynamic switching between DSI & HDMI*/
-            if(IS_DSI_PANEL_RES(resID)) {
-                VPP_BE_MIPI_PanelInit(vpp_obj, (resID - RES_MIN_DSI));
-            } else {
-                if (!(vpp_obj->iVppFeatureCfg[0] & VPP_FEATURE_HDMITX)) {
-                    VPPAPI_DBG_ERROR("Invalid MIPI-DSI Res ID = %d\n", resID);
-                    return (MV_VPP_EBADPARAM);
-                }
-            }
-        }
 
         if (resID != RES_RESET) {
+
+            VPP_ResetPlane(vpp_obj, uiDisplayMode);
+            vpp_obj->m_VoutMode = uiDisplayMode;
+
+            if (vpp_obj->iVppFeatureCfg[0] & VPP_FEATURE_MIPI_DSI) {
+                /*Handle dynamic switching between DSI & HDMI*/
+                if(IS_DSI_PANEL_RES(resID)) {
+                    VPP_BE_MIPI_PanelInit(vpp_obj, (resID - RES_MIN_DSI));
+                } else {
+                    if (!(vpp_obj->iVppFeatureCfg[0] & VPP_FEATURE_HDMITX)) {
+                        VPPAPI_DBG_ERROR("Invalid MIPI-DSI Res ID = %d\n", resID);
+                        return (MV_VPP_EBADPARAM);
+                    }
+                }
+            }
 
             VPP_SetClk(vpp_obj, cpcbID, resID);
 
@@ -11404,6 +11407,8 @@ int MV_VPPOBJ_LoadMipiConfig(int handle, VPP_MIPI_LOAD_CONFIG *pMipiLoadConfigPa
     VPP_Memcpy(pMipiCfg, (void*)shmVirtAddr,
         (pMipiLoadConfigParams->noOfresID * sizeof(VPP_MIPI_CONFIG_PARAMS)));
 
+    VPP_UnMapUnRegister_SingleBuffer(&bufHandle);
+
     /* Copy the Command buffer to TA local memory*/
     for (i = 0; i < pMipiLoadConfigParams->noOfresID; i++) {
         VPP_SHM32_MALLOC(VPP_SHM_NONSECURE, MAX_CMD_BUF_SIZE, &CmdAllocAddr);
@@ -11428,6 +11433,7 @@ int MV_VPPOBJ_LoadMipiConfig(int handle, VPP_MIPI_LOAD_CONFIG *pMipiLoadConfigPa
         VPP_Memcpy((void*) CmdAllocAddr, (void*)shmVirtAddr, MAX_CMD_BUF_SIZE);
 
         pMipiCfg[i].vppMipiCmd.pcmd = (ARCH_PTR_TYPE) CmdAllocAddr;
+        VPP_UnMapUnRegister_SingleBuffer(&bufHandle);
     }
 
     vpp_obj->dsiInfo.MipiCfg.noOfresID = pMipiLoadConfigParams->noOfresID;

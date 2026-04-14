@@ -442,3 +442,13 @@ TEE_Result VPP_OSAL_TEE_Callback(
     return cb_res;
 }
 
+UINT32 VPP_OSAL_GetCurTeeTimeInMS(void)
+{
+      UINT32 timeInMS;
+      TEE_Time curr_time;
+
+      TEE_GetSystemTime(&curr_time);
+      timeInMS = (curr_time.seconds * 1000) + curr_time.millis;
+
+      return timeInMS;
+}

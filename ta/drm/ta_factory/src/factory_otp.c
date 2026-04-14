@@ -27,6 +27,7 @@
 #ifdef CONFIG_OPTEE
 #include "tee_internal_api_extensions.h"
 #include "tee_api_syna.h"
+#include "trace.h"
 #else
 #include "tee_common.h"
 #include "tee_internal_common.h"
@@ -169,6 +170,9 @@ static HRESULT MV_DRMLIB_OTP_BurnLayout(UINT8 *pbLayout, UINT32 uLayoutLen)
     {
         FACTORY_ERR("Failed to call BCM command\n");
         FACTORY_ERR("bitMap = 0x%x\n", pbRespSHM->BitMap);
+        #ifdef CONFIG_OPTEE
+        DMSG("BCM cmd return = 0x%x\n", lRes);
+        #endif
         goto Func_Ret;
     }
 
@@ -473,6 +477,9 @@ static TEE_Result Drm_OTPReadPublicItems(TEE_Param params[4])
         goto Func_Ret;
     }
 
+    // RKEK_ID, pbSHMBuf[0]
+    memcpy((unsigned char *)pubOtp.RKEKID, pbSHMBuf, 8);
+
     //parse and update pbSHMBuf to pubOtp, basing on Dolphin_OTP_Layout-v062.xlsx
     //Gen2 row 64~66, pbSHMBuf[8]
     memcpy((UINT8*)pubOtp.TA_Vendor_SegID, pbSHMBuf + 8, 24);
@@ -568,6 +575,18 @@ static TEE_Result Drm_OTPReadPublicItems(TEE_Param params[4])
     //CAS4 row 26 byte 3 bit 2~3, pbshmbuf[120 + 2]
     readByte = (*(UINT8*)(pbSHMBuf+ 120 + 3) & 0x0c) >> 2;
     memcpy((UINT8*)&pubOtp.STEST_Protection_dup, &readByte, 1);
+
+    // K0_REE_HASH, pbSHMBuf[128] - pbSHMBuf[159]
+    memcpy(&pubOtp.K0_REE_HASH, pbSHMBuf + 128, 8 * sizeof(unsigned int));
+
+    // REE_VERSION, pbSHMBuf[160]
+    memcpy(&pubOtp.REE_VERSION, pbSHMBuf + 160, sizeof(unsigned int));
+
+    // BOOT_VERSION, pbSHMBuf[164]
+    memcpy(&pubOtp.BOOT_VERSION, pbSHMBuf + 164, sizeof(unsigned int));
+
+    // JTAGProtectionLevel, pbSHMBuf[168]
+    memcpy(&pubOtp.JTAGProtectionLevel, pbSHMBuf + 168, sizeof(unsigned int));
 
 #ifndef CONFIG_OPTEE
     //use RSA pub to encrypt otp dump data

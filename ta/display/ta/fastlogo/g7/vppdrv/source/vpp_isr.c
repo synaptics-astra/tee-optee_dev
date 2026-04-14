@@ -3645,7 +3645,8 @@ static int startChannelDataLoader(VPP_OBJ *vpp_obj, int chanID)
                         FE_DLR_SetPlanePackSel(vpp_obj, VPP_FE_DLR_CHANNEL_PIP_1,
                                 plane->srcfmt, plane->bpp);
                     }
-                    if(plane->srcfmt == SRCFMT_XRGB32)
+                    if(plane->srcfmt == SRCFMT_XRGB32 || plane->srcfmt == SRCFMT_RGB565 ||
+                            plane->srcfmt == SRCFMT_RGB888)
                     {
                         //enableperpixelalpha value as 0 so that it will take per plane alpha
                         VPP_OVL_SetPlaneAlpha(vpp_obj, cpcbID, Vpp_OVL_PLANE2,
@@ -3656,11 +3657,6 @@ static int startChannelDataLoader(VPP_OBJ *vpp_obj, int chanID)
                     {
                         VPP_OVL_SetPlaneAlpha(vpp_obj, cpcbID, Vpp_OVL_PLANE2,
                                 chan->disp_win_attr.alpha, VPP_PERPIXEL_ALPHA_ENABLE);
-                    }
-                    else if(plane->srcfmt== SRCFMT_RGB565)
-                    {
-                        VPP_OVL_SetPlaneAlpha(vpp_obj, cpcbID, Vpp_OVL_PLANE2,
-                                VPP_OVL_PLANE_ALPHA_OPAQUE, VPP_PERPIXEL_ALPHA_DISABLE);
                     }
                     else //video format
                     {
@@ -3675,12 +3671,8 @@ static int startChannelDataLoader(VPP_OBJ *vpp_obj, int chanID)
                             plane->bpp, pinfo->m_is_frame_seq);
                     FE_DLR_SetPlanePackSel(vpp_obj, VPP_FE_DLR_CHANNEL_GFX1_0,
                             plane->srcfmt, plane->bpp);
-                    if(plane->srcfmt == SRCFMT_XRGB32)
-                    {
-                        VPP_OVL_SetPlaneAlpha(vpp_obj, cpcbID, Vpp_OVL_PLANE3,
-                                VPP_OVL_PLANE_ALPHA_OPAQUE, VPP_PERPIXEL_ALPHA_DISABLE);
-                    }
-                    else if(plane->srcfmt== SRCFMT_RGB565)
+                    if(plane->srcfmt == SRCFMT_XRGB32|| plane->srcfmt== SRCFMT_RGB565 ||
+                            plane->srcfmt== SRCFMT_RGB888)
                     {
                         VPP_OVL_SetPlaneAlpha(vpp_obj, cpcbID, Vpp_OVL_PLANE3,
                                 VPP_OVL_PLANE_ALPHA_OPAQUE, VPP_PERPIXEL_ALPHA_DISABLE);

@@ -721,13 +721,23 @@ static TEE_Result PTMTA_FreeMem(void* sessionContext,
     TA_LOGH("free mem, phyAddr(PT) %"PRIxPTR"\n", addr.phyAddr);
     entryNum = addr.size >> 2;
 
-    std_list_remove(pPtmMgr->pPTList, pPtNode);
     if(pPtUnit->pReservation) {
-        TEE_ReleaseSecurePages(pPtUnit->pReservation);
+        res = TEE_ReleaseSecurePages(pPtUnit->pReservation);
+        if(res != TEE_SUCCESS){
+            TA_LOGE("%s, ReleaseSecurePages of PT(0x%x) MemId(0x%x) return fail(0x%x)\n",
+                __FUNCTION__, pPtUnit->ptPhyAddr, pPtUnit->pReservation->mem_id, res);
+            return res;
+        }
         TEE_DestroyReservation(pPtUnit->pReservation);
     } else {
-        TEE_Unregister_Memory(pPtUnit->mem_id);
+        res = TEE_Unregister_Memory(pPtUnit->mem_id);
+        if(res != TEE_SUCCESS){
+            TA_LOGE("%s, TEE_Unregister_Memory of PT(0x%x) MemId(0x%x) return fail(0x%x)\n",
+                __FUNCTION__, pPtUnit->ptPhyAddr, pPtUnit->mem_id, res);
+            return res;
+        }
     }
+    std_list_remove(pPtmMgr->pPTList, pPtNode);
     internal_free_PT_unit(pPtUnit);
 
     //set all these page entries to free with pool mgr

@@ -40,6 +40,8 @@
 
 //Command
 #define DRM_SE_GENX_OEM_COMMAND                     0xF001
+#define DRM_SE_OEM_ACCESS_SECURE_SRAM               0xF002
+#define DRM_SE_OEM_AES_GCM_ENCRY_DECRY              0xF003
 
 //OTP
 #define DRM_SE_OTP_BURNLAYOUT                       0xE001

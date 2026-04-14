@@ -42,6 +42,29 @@
 #define CRYPTO_TDES_TYPE    6
 #define CRYPTO_INVTDES_TYPE 7
 
+typedef enum {
+    BCM_SRAM_READ = 0,
+    BCM_SRAM_WRITE = 1
+} BCM_SRAM_ACCESS_T;
+
+/*
+ * Function: BCM_GENERATE_SECUREKEY_V2
+ *   Generate Secrete Key per chip unique ID (CUID)
+ *
+ * Arguments:
+ *   phyAddrUUID          : Phy Address of UUID
+ *   phyAddrAppID         : Phy Address of APPID
+ *   uAppVariant          : Application variant
+ *   phyAddrSecureKey     : Output buffer key
+ *
+ * Returns:
+ *   SUCCESS or one of the BCM error code
+ */
+
+HRESULT BCM_GENERATE_SECUREKEY_V2(UINT32 phyAddrUUID,
+                        UINT32 phyAddrAppID , UINT32 uAppVariant ,
+                        UINT32 phyAddrSecureKey);
+
 /*===============================================================================================
  * Verimatrix
  *===============================================================================================*/
@@ -377,7 +400,20 @@ HRESULT BCM_READ_PUB_OTP(UINT32 uTag, UINT8* AddrOtpBuffer, UINT32 uOtpBufferLen
 *   SUCCESS or one of the BCM error code
 */
 HRESULT BCM_READ_OTP_JTAG(UINT8 *AddrJtag);
-
+/**
+ * Function: HRESULT BCM_ACCESS_SECURITY_SRAM(BCM_SRAM_ACCESS_T access_type, uint32_t idx, uint64_t *pBuf)
+ *
+ *   PI is called to access Secure SRAM Index
+ *
+ * Arguments:
+ * - access_type (IN) - BCM_SRAM_READ or BCM_SRAM_WRITE
+ * - idx         (IN) - Buffer index
+ * - pBuf        (IN/OUT) - Pointer to 64-bit data buffer
+ *
+ * Returns:
+ *   SUCCESS or one of the BCM error code
+ */
+TEE_Result BCM_ACCESS_SECURITY_SRAM(BCM_SRAM_ACCESS_T access_type, uint32_t idx, uint64_t *pBuf);
 /*
  * Function: BCM_GENX_OEM_COMMAND
  *   Load the GenX OEM command to BCM

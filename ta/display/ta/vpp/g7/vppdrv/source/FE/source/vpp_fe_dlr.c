@@ -3950,7 +3950,7 @@ INT FE_DLR_Config(VPP_OBJ *vpp_obj, INT ldr_id, INT src_fmt, INT order, INT bits
         VPP_BCMBUF_Write(vpp_obj->pVbiBcmBuf, RegAddr, vpp_obj->gfx0_ctrl0.u32);
 
         RegAddr = vpp_obj->base_addr + RA_Vpp_GFX0 + RA_GFX0_PIP_PIPE + RA_PIP_PIPE_CTRL1;
-        if((src_fmt == SRCFMT_YUV422)||(src_fmt == SRCFMT_YUV444_DWA)||(src_fmt == SRCFMT_ARGB32) || src_fmt == SRCFMT_ARGB32_PM || src_fmt == SRCFMT_ARBG2101010 || src_fmt == SRCFMT_ARGB4444 || src_fmt == SRCFMT_RGB565 || src_fmt == SRCFMT_ARGB1555 || SRCFMT_ARGB8332 == src_fmt || src_fmt == SRCFMT_XRGB32) {
+        if((src_fmt == SRCFMT_YUV422)||(src_fmt == SRCFMT_YUV444_DWA)||IS_GFX_SRC_FORMAT(src_fmt)) {
             vpp_obj->gfx0_pip_pipe_ctrl1.uCTRL1_clken_ctrl0 = 1;
             vpp_obj->gfx0_pip_pipe_ctrl1.uCTRL1_clken_ctrl1 = 0;
             vpp_obj->gfx0_pip_pipe_ctrl1.uCTRL1_clken_ctrl2 = 1;
@@ -4091,10 +4091,7 @@ INT FE_DLR_Config(VPP_OBJ *vpp_obj, INT ldr_id, INT src_fmt, INT order, INT bits
 #endif //ENABLE_PIP_GFX0_PATH
     else if(ldr_id == VPP_FE_DLR_GFX1) {
         RegAddr = vpp_obj->base_addr + RA_Vpp_GFX1 + RA_GFX1_CTRL1;
-        if(src_fmt == SRCFMT_RGB888)
-            vpp_obj->gfx1_ctrl1.uCTRL1_idata_ctrl = 2;
-        else
-            vpp_obj->gfx1_ctrl1.uCTRL1_idata_ctrl = 0;
+        vpp_obj->gfx1_ctrl1.uCTRL1_idata_ctrl = 0;
         VPP_BCMBUF_Write(vpp_obj->pVbiBcmBuf, RegAddr, vpp_obj->gfx1_ctrl1.u32);
     }
 #ifndef CONFIG_AMP_VPP_INVERSE_SCAN

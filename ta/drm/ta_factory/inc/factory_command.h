@@ -25,12 +25,14 @@
  *
  * Arguments:
  * - commandID      (IN) - command related with OTP
+ * - paramTypes     (IN) - type of parameters
  * - params[4]      (IN) - parameters from normal world
  *
  * Return:
  * TEE_SUCCESS or one of the TEE error code
  */
 TEE_Result MV_DRM_COMMAND_InvokeCommandEntryPoint(uint32_t commandID,
+                                            uint32_t paramTypes,
                                             TEE_Param params[4]);
 
 #endif /* __FACTORY_RPMB_H__ */

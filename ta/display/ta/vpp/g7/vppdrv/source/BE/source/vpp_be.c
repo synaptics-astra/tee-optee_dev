@@ -2400,6 +2400,8 @@ int VPP_BE_GetSinkFeatureMap (VPP_OBJ *vpp_obj, VPP_HDMI_SINKCAP_BITMASK *pSinkF
     BE_HDMITX_DATA  *pHdmiTx;
     pHdmiTx = (BE_HDMITX_DATA*)(vpp_obj->be.hdmiTx);
     int i, fps60 = 0, fhd = 0;
+    int res_576p = 0;
+    int res_720p = 0;
     INT *pSinkCapsMask = (INT *)pSinkFeatureMap;
 
     *pSinkCapsMask = 0x00;
@@ -2423,6 +2425,12 @@ int VPP_BE_GetSinkFeatureMap (VPP_OBJ *vpp_obj, VPP_HDMI_SINKCAP_BITMASK *pSinkF
         if ((pHdmiTx->edidInfo.resInfo[i].hActive == 1920) &&
             (pHdmiTx->edidInfo.resInfo[i].vActive == 1080))
             fhd = true;
+        if ((pHdmiTx->edidInfo.resInfo[i].hActive == 720) &&
+            (pHdmiTx->edidInfo.resInfo[i].vActive == 576))
+            res_576p = true;
+        if ((pHdmiTx->edidInfo.resInfo[i].hActive == 1280) &&
+            (pHdmiTx->edidInfo.resInfo[i].vActive == 720))
+            res_720p = true;
     }
 
     if (!fps60)
@@ -2430,6 +2438,12 @@ int VPP_BE_GetSinkFeatureMap (VPP_OBJ *vpp_obj, VPP_HDMI_SINKCAP_BITMASK *pSinkF
 
     if (fhd)
         *pSinkCapsMask |= (1<<VPP_HDMI_SINKCAP_BITMASK_FHD);
+
+    if (res_576p)
+        *pSinkCapsMask |= (1<<VPP_HDMI_SINKCAP_BITMASK_576P);
+
+    if (res_720p)
+        *pSinkCapsMask |= (1<<VPP_HDMI_SINKCAP_BITMASK_720P);
 
     return MV_VPP_OK;
 }

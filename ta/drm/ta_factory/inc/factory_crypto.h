@@ -22,7 +22,8 @@
 #include "drm_tee_types.h"
 
 #define PKCS_PSS_SHA_256_SIGN  256
-
+#define AES_GCM_TAG_SIZE     16
+#define AES_GCM_IV_SIZE      12
 #define STATUS_OK 1
 #define STATUS_ERROR 0
 
@@ -37,5 +38,5 @@
  */
 TEE_Result MV_DRM_CRYPTO_InvokeCommandEntryPoint(uint32_t commandID,
                                               TEE_Param params[4]);
-
+TEE_Result Drm_GenerateSecureKey_V2(TEE_Param params[4]);
 #endif /* __FACTORY_CRYPTO_H__ */

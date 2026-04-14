@@ -36,6 +36,42 @@
 //#define BCM_DEBUG
 
 /*===============================================================================================
+ * Generic
+ *===============================================================================================*/
+/*
+ * Function: BCM_GENERATE_SECUREKEY_V2
+ *   Generate Secrete Key per chip unique ID (CUID)
+ *
+ * Arguments:
+ *   phyAddrUUID          : Phy Address of UUID
+ *   phyAddrAppID         : Phy Address of APPID
+ *   uAppVariant          : Application variant
+ *   phyAddrSecureKey     : Output buffer key
+ *
+ * Returns:
+ *   SUCCESS or one of the BCM error code
+ */
+
+HRESULT BCM_GENERATE_SECUREKEY_V2(UINT32 phyAddrUUID,
+                        UINT32 phyAddrAppID , UINT32 uAppVariant ,
+                        UINT32 phyAddrSecureKey)
+{
+    BCM_MAILBOX_COMMAND cmd;
+    BCM_MAILBOX_STATUS status;
+
+    bcm_clear_command(&cmd);
+    bcm_clear_status(&status);
+    cmd.arg0 = (UINT32)phyAddrUUID;
+    cmd.arg1 = (UINT32)phyAddrAppID;
+    cmd.arg2 = uAppVariant;
+    cmd.arg3 = (UINT32)phyAddrSecureKey;
+
+    cmd.command = DRM_GENERATE_SECUREKEY_V2;
+    execute_bcm_command(&cmd, &status);
+    return status.return_status;
+}
+
+/*===============================================================================================
  * Verimatrix
  *===============================================================================================*/
 /*
@@ -976,6 +1012,34 @@ HRESULT BCM_READ_OTP(UINT32 type, UINT32 *pdata, UINT32 *pmask)
     return status.return_status;
 }
 
+/**
+ * Function: HRESULT BCM_ACCESS_SECURITY_SRAM(BCM_SRAM_ACCESS_T access_type, uint32_t idx, uint64_t *pBuf)
+ *
+ *   PI is called to access Secure SRAM Index
+ *
+ * Arguments:
+ * - access_type (IN) - BCM_SRAM_READ or BCM_SRAM_WRITE
+ * - idx         (IN) - Buffer index
+ * - pBuf        (IN/OUT) - Pointer to 64-bit data buffer
+ *
+ * Returns:
+ *   SUCCESS or one of the BCM error code
+ */
+TEE_Result BCM_ACCESS_SECURITY_SRAM(BCM_SRAM_ACCESS_T access_type, uint32_t idx, uint64_t *pBuf)
+{
+    BCM_MAILBOX_COMMAND cmd;
+    BCM_MAILBOX_STATUS status;
+
+    bcm_clear_command(&cmd);
+    bcm_clear_status(&status);
+    cmd.arg0 = (uint32_t)access_type;
+    cmd.arg1 = idx;
+    cmd.arg2 = (UINT)TEE_VirtToPhys(pBuf);
+    cmd.command = DRM_ACCESS_SRAM;
+
+    execute_bcm_command(&cmd, &status);
+    return status.return_status;
+}
 /*
  * Function: HRESULT BCM_WRITE_OTP(UINT32 type, UINT32 data, UINT32 mask)
  *

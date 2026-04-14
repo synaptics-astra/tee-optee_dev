@@ -95,6 +95,8 @@ typedef enum _DRM_PRIMITIVE
     RPMB_GENERATE_AUTHENKEY         = 0x400C,
     DRM_KM_LOADKEYS                 = 0x400D,
     DRM_PVR_AESK0KDF_KEY            = 0x400F,
+    // Misc
+    DRM_GENERATE_SECUREKEY_V2       = 0x4010,
 
     // OTP
     DRM_OTP_PROGRAM_OTP             = 0x5000,
@@ -208,6 +210,7 @@ typedef enum _DRM_PRIMITIVE
     DRM_CHARACTERIZATION            = 0xD001,
     DRM_GENERATE_SCRAMBLE_KEY       = 0xD002,
     DRM_CONFIGURE_SCRAMBLE_KEY      = 0xD003,
+    DRM_ACCESS_SRAM                 = 0xD004,
 
     DRM_EXPORT_CUSTOM_DATA          = 0xE000,
     //IRDETO PI

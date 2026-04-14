@@ -87,7 +87,7 @@
 
 typedef struct mm_cell_t {
     int occupied;
-    int start;
+    uintptr_t start;
     int size;
     struct mm_cell_t * next;
 } MM_CELL;
@@ -188,7 +188,7 @@ static void gen_mem_free(void * pHeap, int mem_start)
     if(m && mem_start >= 0) {
         MM_CELL * p = &m->head;
         for( ; p; p = p->next) {
-            if(p->occupied && p->start == mem_start) {
+            if(p->occupied && p->start == (uintptr_t)mem_start) {
                 p->occupied = 0;
                 m->avail += p->size;
                 gen_heap_cell_merge(m);

@@ -250,6 +250,66 @@ Func_Ret:
     return result;
 }
 
+TEE_Result Drm_GenerateSecureKey_V2(TEE_Param params[4])
+{
+    TEE_Result result = TEE_ERROR_GENERIC;
+    TEE_UUID ta_uuid = FACTORY_UUID;
+    UINT8 APP_ID_KEY[16] = { 0x10, 0x00, 0x00, 0x02,  'A','P','P','K', 0,0,0,0,0,0,0,0 };
+    UINT32 app_variant = 0;
+    UINT8 secure_key[16] = {0};
+    UINT8 *pbSHMBuf = NULL;
+    UINT32 size = sizeof(ta_uuid) + sizeof(APP_ID_KEY) + sizeof(app_variant) + sizeof(secure_key);
+    UINT32 pta_uuid_pysical_addr = 0;
+    UINT32 papp_id_key_pysical_addr = 0;
+    UINT32 psecure_key_pysical_addr = 0;
+    UINT8 *pkey;
+    UINT8 *pbuf = NULL;
+    DRM_TEE_SHM_HANDLE pbshmhandle = INVALID_SHM_HANDLE;
+
+    app_variant = params[0].value.a;
+
+    pbSHMBuf = DRM_TEE_SHM_Malloc(size, &pbshmhandle);
+    if (NULL == pbSHMBuf) {
+        FACTORY_ERR("Out of memory\n");
+        result = TEE_ERROR_OUT_OF_MEMORY;
+        goto Func_Ret;
+    }
+    memcpy(pbSHMBuf, &ta_uuid, sizeof(ta_uuid));
+    memcpy(pbSHMBuf + sizeof(ta_uuid), APP_ID_KEY, sizeof(APP_ID_KEY));
+    memcpy(pbSHMBuf + sizeof(ta_uuid) + sizeof(APP_ID_KEY), &app_variant, sizeof(app_variant));
+    memcpy(pbSHMBuf + sizeof(ta_uuid) + sizeof(APP_ID_KEY) + sizeof(app_variant), secure_key, sizeof(secure_key));
+
+    pta_uuid_pysical_addr = (UINT32)TEE_VirtToPhys(&pbSHMBuf[0]);
+    papp_id_key_pysical_addr = (UINT32)TEE_VirtToPhys(&pbSHMBuf[sizeof(ta_uuid)]);
+    psecure_key_pysical_addr = (UINT32)TEE_VirtToPhys(&pbSHMBuf[sizeof(ta_uuid) + sizeof(APP_ID_KEY) + sizeof(app_variant)]);
+    pkey = &pbSHMBuf[sizeof(ta_uuid) + sizeof(APP_ID_KEY) + sizeof(app_variant)];
+
+    if (TEE_SUCCESS != TEE_FlushCache(pbSHMBuf, size)) {
+        FACTORY_ERR("Failed to flush cache\n");
+        result = TEE_ERROR_GENERIC;
+        goto Func_Ret;
+    }
+
+    result = BCM_GENERATE_SECUREKEY_V2(pta_uuid_pysical_addr, papp_id_key_pysical_addr, app_variant, psecure_key_pysical_addr);
+    if (result != TEE_SUCCESS) {
+        FACTORY_ERR("Failed to call BCM command (error %lX)\n", result);
+        goto Func_Ret;
+    }
+
+    if (TEE_InvalidateCache(pbSHMBuf, size) != TEE_SUCCESS) {
+        FACTORY_ERR("Failed to invalidate cache\n");
+        result = TEE_ERROR_GENERIC;
+    }
+    // return secure_key to CA
+    pbuf = (UINT8*)params[1].memref.buffer;
+    memcpy(pbuf, pkey, params[1].memref.size);
+
+Func_Ret:
+    DRM_TEE_SHM_Free(pbshmhandle);
+
+    return result;
+}
+
 TEE_Result MV_DRM_CRYPTO_InvokeCommandEntryPoint(uint32_t commandID,
                                               TEE_Param params[4])
 {

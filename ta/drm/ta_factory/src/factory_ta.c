@@ -75,7 +75,7 @@ TEE_Result TA_EXPORT TA_InvokeCommandEntryPoint(void *sessionContext,
     /* cmp the command with the defined command */
     switch(commandID & COMMAND_MASK) {
         case COMMAND_MASK:
-            result = MV_DRM_COMMAND_InvokeCommandEntryPoint(commandID, params);
+            result = MV_DRM_COMMAND_InvokeCommandEntryPoint(commandID, paramTypes, params);
             break;
         case OTP_MASK:
             result = MV_DRM_OTP_InvokeCommandEntryPoint(commandID, params);

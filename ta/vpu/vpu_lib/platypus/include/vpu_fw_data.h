@@ -198,7 +198,7 @@ enum syna_frame_field {
 };
 
 /* ***VPU firmware APIs begins here*** */
-/* VPU Firmware version: 34890 */
+/* VPU Firmware version: 34908 */
 #ifdef __KERNEL__
 enum syna_dec_channel
 {
@@ -569,6 +569,8 @@ struct syna_venc_2ndpass_param
 	unsigned int sliceSize;
 	unsigned int ipf;
 	unsigned int ltrf;
+	unsigned int cirStart;
+	unsigned int cirInterval;
 }__attribute__ ((aligned(4)));
 
 /* ***VPU firmware APIs struct end here*** */

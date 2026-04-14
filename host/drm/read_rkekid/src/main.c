@@ -186,8 +186,8 @@ int main(int argc, char *argv[])
 
     if (result == TEEC_SUCCESS) {
        memcpy(rkekid, hShm.buffer, rkek_id_size);
-       printf("RKEKID: %02x%02x%02x%02x%02x%02x%02x%02x\n", rkekid[0], rkekid[1], rkekid[2], rkekid[3], \
-                                                             rkekid[4], rkekid[5], rkekid[6], rkekid[7]);
+       printf("RKEKID: %02x%02x%02x%02x%02x%02x%02x%02x\n", rkekid[7], rkekid[6], rkekid[5], rkekid[4], \
+                                                             rkekid[3], rkekid[2], rkekid[1], rkekid[0]);
     }
     else {
        printf("%s:%d: ret=0x%08x\n", __FUNCTION__, __LINE__, result);

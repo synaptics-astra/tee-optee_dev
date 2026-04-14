@@ -1214,6 +1214,8 @@ TYPEDEF_STRUCT(venc_2ndpass_param_t)
     unsigned int    sliceSize;                //!< [0..height/16] Slice size in macroblock rows
     unsigned int    ipf;                      //!< The use of immediately previous frame as reference and for refresh
     unsigned int    ltrf;                     //!< The use of long term reference picture as reference and for refresh
+    unsigned int    cirStart;                 //!< [0..mbPerFrame-1] First macroblock for Cyclic Intra Refresh
+    unsigned int    cirInterval;              //!< [0..mbPerFrame] Macroblock interval for Cyclic Intra Refresh, 0=disabled
 };
 
 //---------------------------------------------------------------------------

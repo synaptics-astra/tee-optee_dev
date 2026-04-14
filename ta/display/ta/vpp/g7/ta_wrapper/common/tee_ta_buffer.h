@@ -67,6 +67,8 @@ extern "C" {
 #define VPP_BUFF_GET_MAPPED_ADDR(pBuffHandle)    (pBuffHandle)->phy_addr
 #endif //VPP_ENABLE_MEMID_BY_VIRT_ADDR
 
+#define VPP_BUFF_ENABLE_UNMAP_UNREGISTER
+
 #else //!VPP_ENABLE_PASSSHM_BY_MEMID
 
 /*Enable this macro to force do MEMMAP for every instance.

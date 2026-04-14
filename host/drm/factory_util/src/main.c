@@ -61,7 +61,10 @@ const char* OTP_DUMP_FILE = "/data/otp_dump.bin";
 
 #define FACTORY_TA_UUID {0x1316a183, 0x894d, 0x43fe, \
     {0x98, 0x93, 0xbb, 0x94, 0x6a, 0xe1, 0x04, 0x20}}
+//Command
+#define DRM_SE_CA_OEM_ACCESS_SECURE_SRAM 0xF002
 
+//OTP
 #define DRM_SE_CA_CMD_OTP_READ_CAS1_JTAG  0xE003
 #define DRM_SE_CA_CMD_OTP_READ_CAS2_JTAG  0xE004
 #define DRM_SE_CA_CMD_OTP_READ_CAS4_JTAG  0xE005
@@ -110,6 +113,11 @@ typedef struct {
    unsigned char  BSCAN_Protection_dup;
    unsigned char  STEST_Protection;
    unsigned char  STEST_Protection_dup;
+   unsigned char  RKEKID[8];
+   unsigned int   K0_REE_HASH[8];
+   unsigned int   REE_VERSION;
+   unsigned int   BOOT_VERSION;
+   unsigned int   JTAGProtectionLevel;
 } PUBLIC_OTP_ITEMS;
 
 typedef enum {
@@ -168,6 +176,9 @@ typedef enum {
     OTP_MP_PROVISION_DONE,                // 1 bits (1 x uint32_t)
     OTP_SCS_AREA_SIZE_SEL,                // 2 bits (1 x uint32_t)
     OTP_REE_JTAG_PROTECTION_POLICY,       // 2 bits (1 x uint32_t)
+    OTP_REE_VERSION,                      // 32 bits (1 x uint32_t)
+    OTP_RKEK_ID_0,                        // 64 bits = 2 x uint32_t
+    OTP_RKEK_ID_1,
 
     /* ---- Synaptics Ownership ---- */
     OTP_EMMC_BOOT_DISABLE = 200,          // 1 bit  (1 x uint32_t)
@@ -176,6 +187,9 @@ typedef enum {
     OTP_OEM_AUDIO_CUSTOMER_ID,            // 32 bits (1 x uint32_t)
     OTP_PRODUCTION_CHIP_FLAG,             // 3 bits  (1 x uint32_t)
     OTP_USB_BOOT_DISABLE,                 // 1 bit  (1 x uint32_t)
+    OTP_BOOT_VERSION,                     // 32 bits (1 x uint32_t)
+    OTP_SOC_UID_0,                        // 64 bits = 2 x uint32_t
+    OTP_SOC_UID_1,
 
     OTP_FIELD_MAX
 } OTP_FIELD_ID;
@@ -204,10 +218,12 @@ static const otp_field_entry_t otp_field_table[] = {
     X(OTP_AESK0_0), X(OTP_AESK0_1), X(OTP_AESK0_2), X(OTP_AESK0_3),
     X(OTP_REE_SEGID), X(OTP_REE_SECURITY_ENABLE), X(OTP_BOOT_SECURITY_ENABLE),
     X(OTP_MP_PROVISION_DONE), X(OTP_SCS_AREA_SIZE_SEL), X(OTP_REE_JTAG_PROTECTION_POLICY),
+    X(OTP_REE_VERSION), X(OTP_RKEK_ID_0), X(OTP_RKEK_ID_1),
 
     /* Synaptics Ownership */
     X(OTP_EMMC_BOOT_DISABLE), X(OTP_SPI_BOOT_DISABLE), X(OTP_DOLBY_AUDIO_DISABLE),
     X(OTP_OEM_AUDIO_CUSTOMER_ID), X(OTP_PRODUCTION_CHIP_FLAG), X(OTP_USB_BOOT_DISABLE),
+    X(OTP_BOOT_VERSION), X(OTP_SOC_UID_0), X(OTP_SOC_UID_1),
 
     X(OTP_FIELD_MAX)
 #undef X
@@ -239,6 +255,19 @@ void UsageHelp(int argc, char* argv[])
     printf("        2: read encrypted public OTP items to %s\n", OTP_DUMP_FILE);
     printf("        3: read SOC_UID from OTP\n");
     printf("        4: read chip revision from OTP\n");
+    printf("        5: secure SRAM access\n");
+    printf("            Usage: %s 5 <action> <idx> [value]\n", argv[0]);
+    printf("            Actions:\n");
+    printf("                read/r: Read 64-bit value from the specified buffer index.\n");
+    printf("                write/w: Write 64-bit value to the specified buffer index.\n");
+    printf("            Indices:\n");
+    printf("                idx0/0: Currently the ONLY supported index.\n");
+    printf("                (Note: idx > 0 will return 'no support')\n");
+    printf("            Value:\n");
+    printf("                [64-bit Hex] : Required for write (e.g., 0x12345678AABBCCDD).\n");
+    printf("\n");
+    printf("                %s 5 read 0\n", argv[0]);
+    printf("                %s 5 write idx0 0x55556666\n", argv[0]);
     printf("        6: OTP utility commands\n");
     printf("            usage:\n");
     printf("                %s 6 otpread  <otp_index>\n", argv[0]);
@@ -305,6 +334,19 @@ static void printPublicOtp(const PUBLIC_OTP_ITEMS *otp) {
     printf("BSCAN_Protection_dup: 0x%02X\n", otp->BSCAN_Protection_dup);
     printf("STEST_Protection: 0x%02X\n", otp->STEST_Protection);
     printf("STEST_Protection_dup: 0x%02X\n", otp->STEST_Protection_dup);
+    printf("REE_VERSION: 0x%08X\n", otp->REE_VERSION);
+    printf("BOOT_VERSION: 0x%08X\n", otp->BOOT_VERSION);
+    printf("JTAGProtectionLevel: 0x%08X\n", otp->JTAGProtectionLevel);
+
+    printf("RKEKID: %02x%02x%02x%02x%02x%02x%02x%02x\n", otp->RKEKID[7], otp->RKEKID[6],
+           otp->RKEKID[5], otp->RKEKID[4], otp->RKEKID[3], otp->RKEKID[2], otp->RKEKID[1],
+           otp->RKEKID[0]);
+
+    printf("K0_REE_HASH: ");
+    for (i = 0; i < 8; i++)
+        printf("0x%08X ", otp->K0_REE_HASH[i]);
+
+    printf("\n");
 }
 
 /* ---- Dump Implementation ---- */
@@ -636,6 +678,67 @@ __EXIT:
     Factory_TZFinalize();
     return lRes;
 }
+HRESULT _access_secure_SRAM(bool isWrite, uint32_t idx, uint64_t *val)
+{
+    HRESULT lRes = S_FALSE;
+    TEEC_Result result = TEEC_ERROR_GENERIC;
+    TEEC_Operation operation;
+    uint32_t err_origin = 0;
+
+    if (idx != 0) {
+        printf("Error: Only buffer index 0 is supported currently.\n");
+        return S_FALSE;
+    }
+
+    lRes = Factory_TZInitialize();
+    if (lRes != S_OK) {
+        printf("TZ initialize failed\n");
+        lRes = S_FALSE;
+        goto __EXIT;
+    }
+
+    memset(&operation, 0, sizeof(operation));
+
+    if (isWrite) {
+        //Write - Split 64-bit 'val' into two 32-bit parameters (a and b)
+        operation.paramTypes = TEEC_PARAM_TYPES(TEEC_VALUE_INPUT,  //idx
+                                                TEEC_VALUE_INPUT,  //value
+                                                TEEC_NONE,
+                                                TEEC_NONE);
+        operation.params[0].value.a = idx;
+        operation.params[1].value.a = (uint32_t)(*val & 0xFFFFFFFF);
+        operation.params[1].value.b = (uint32_t)((*val >> 32) & 0xFFFFFFFF);
+    } else {
+        // Mode: Read - Pass index as input, expect 64-bit result as output
+        operation.paramTypes = TEEC_PARAM_TYPES(TEEC_VALUE_INPUT,  // idx
+                                                TEEC_VALUE_OUTPUT, // val_low, val_high
+                                                TEEC_NONE,
+                                                TEEC_NONE);
+        operation.params[0].value.a = idx;
+    }
+
+    result = TEEC_InvokeCommand(
+                &session,
+                DRM_SE_CA_OEM_ACCESS_SECURE_SRAM, // Command ID
+                &operation,
+                &err_origin);
+
+    if (result == TEEC_SUCCESS) {
+        if (!isWrite) {
+            printf("Read SRAM[idx %d] = 0x%08x%08x\n", idx, operation.params[1].value.b, operation.params[1].value.a);
+        } else {
+            printf("Write SRAM[idx %d] success.\n", idx);
+        }
+        lRes = S_OK;
+    } else {
+        printf("%s: TEEC_InvokeCommand failed. ret=0x%08x, origin=0x%08x\n", __FUNCTION__, result, err_origin);
+        lRes = S_FALSE;
+    }
+
+__EXIT:
+    Factory_TZFinalize();
+    return lRes;
+}
 
 HRESULT _read_chip_rev(void)
 {
@@ -865,6 +968,52 @@ int main(int argc, char *argv[])
     case 4:
         if (argc != 2) { UsageHelp(argc, argv); break; }
         status = _read_chip_rev();
+        break;
+    case 5:
+        // Basic argument count check
+        if (argc < 4) { UsageHelp(argc, argv); break; }
+        uint32_t idx = 0;
+        unsigned long long val_check = 0;
+        uint64_t val = 0;
+        char* action = argv[2];
+        char* endptr;
+
+        // Parse index
+        if (strncmp(argv[3], "idx", 3) == 0) {
+            idx = (uint32_t)strtoul(argv[3] + 3, NULL, 10);
+        } else {
+            idx = (uint32_t)strtoul(argv[3], NULL, 10);
+        }
+
+        // Branch user action
+        if (strcasecmp(action, "write") == 0 || strcasecmp(action, "w") == 0) {
+            // Write action requires 5 argument: value
+            if (argc < 5) {
+                printf("Error: Write action requires a hex value (e.g., 0x55556666).\n");
+                break;
+            }
+
+            // Convert string to 64-bit integer
+            val_check = strtoull(argv[4], &endptr, 16);
+
+            // Data validation: Check for 64-bit overflow and format errors
+            if(val_check == ~0ULL) {
+                printf("Error: Value is out of 64-bit range (Overflow)!\n");
+                break;
+            }
+            if(endptr == argv[4] || *endptr != '\0') {
+                printf("Error: Invalid hex format '%s'.\n", argv[4]);
+                break;
+            }
+            val = (uint64_t)val_check;
+            status = _access_secure_SRAM(true, idx, &val);
+
+        } else if (strcasecmp(action, "read") == 0 || strcasecmp(action, "r") == 0) {
+            status = _access_secure_SRAM(false, idx, &val);
+        } else {
+            printf("Error: Invalid action '%s'. Use 'read' or 'write'.\n", action);
+            UsageHelp(argc, argv);
+        }
         break;
 
     case 6: {

@@ -102,6 +102,8 @@ TEE_Result VPP_OSAL_TEE_Callback(
     uint32_t        cancellationRequestTimeout,
     uint32_t*       returnOrigin);
 
+UINT32 VPP_OSAL_GetCurTeeTimeInMS(void);
+
 #if defined( __LINUX_KERNEL__ )
 unsigned int rand(void);
 #endif

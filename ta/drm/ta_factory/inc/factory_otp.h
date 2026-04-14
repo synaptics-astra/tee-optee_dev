@@ -50,6 +50,11 @@ typedef struct {
    unsigned char  BSCAN_Protection_dup;
    unsigned char  STEST_Protection;
    unsigned char  STEST_Protection_dup;
+   unsigned char  RKEKID[8];
+   unsigned int   K0_REE_HASH[8];
+   unsigned int   REE_VERSION;
+   unsigned int   BOOT_VERSION;
+   unsigned int   JTAGProtectionLevel;
 } PUBLIC_OTP_ITEMS;
 
 /* OTP related command dispatcher
