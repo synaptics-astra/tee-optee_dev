@@ -146,13 +146,13 @@ enum {
 	((t0) | ((t1) << 4) | ((t2) << 8) | ((t3) << 12))
 #define TEE_PARAM_TYPE_GET(t, i)	(((t) >> (i*4)) & 0xF)
 
-#else
+#else // TA_COMPILE
 
 #define LOG_TAG         "[M2M_TA]"
 
 #include "tsp_base_config.h"
 #include "tee_internal_api.h"
-#include "config_log.h"
+#include "m2m_config_log.h"
 #include "ta_log.h"
 
 #include "m2m_crypto_types.h"
@@ -450,9 +450,7 @@ struct tagFigoSubsytemDriverContextData
     UNSG32                     uEvtBufVirAddr;
     UNSG32                     uEvtBufPhyAddr;
     UNSG32*                    pbBIUImagePhy;
-#ifdef CONFIG_OPTEE
     TEE_Reservation*           pbBIUReservation;
-#endif 
 };
 
 #endif

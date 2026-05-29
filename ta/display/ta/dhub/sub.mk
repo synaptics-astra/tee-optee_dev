@@ -15,7 +15,7 @@ TA_INC_DIRS = \
                 $(HAL_PATH)/fastlogo/include \
                 $(VPP_PATH)/lib/osal/include \
                 $(VPP_PATH)/lib/dhub/configs/$(CHIP_SPECIFIC_FOLDER) \
-                $(VPP_PATH)/lib/common/include \
+                $(HAL_PATH)/common/include \
                 $(VPP_PATH)/lib/dhub/include \
                 $(VPP_PATH)/g7/ta_wrapper/common \
                 $(VPP_PATH)/g7/ta_wrapper/include \
@@ -30,7 +30,7 @@ TA_INC_DIRS = \
 
 
 TA_SRC_FILES    += $(wildcard ./ta_wrapper/source/tee_ta_mmap_dhub.c)
-TA_SRC_FILES    += $(VPP_PATH)/lib/common/include/mmap/tee_ta_mmap_helper.c
+TA_SRC_FILES    += $(HAL_PATH)/common/include/mmap/tee_ta_mmap_helper.c
 TA_SRC_FILES    += $(wildcard ./ta_wrapper/source/tee_ta_dhub_memmap.c)
 TA_SRC_FILES    += $(wildcard ./ta_wrapper/source/tee_ta_dhub.c)
 TA_SRC_FILES    += $(wildcard $(VPP_PATH)/lib/dhub/source/*.c)

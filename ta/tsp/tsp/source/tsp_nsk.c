@@ -30,7 +30,7 @@
 #include "tee_api_syna.h"
 #endif
 #include "tsp_cmd.h"
-#include "config_log.h"
+#include "tsp_config_log.h"
 #include "ta_log.h"
 #include "tsp_nsk.h"
 #include "tsp_fw_spec.h"

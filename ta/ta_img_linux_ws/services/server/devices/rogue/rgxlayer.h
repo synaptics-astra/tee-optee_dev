@@ -188,7 +188,7 @@ IMG_UINT32 RGXGetOSPageSize(const void *hPrivate);
 /* This is used to check if a specific feature is enabled.
  * Should be used instead of calling RGXDeviceHasFeature.  */
 #define RGX_DEVICE_HAS_FEATURE(hPrivate, Feature) \
-			RGXDeviceHasFeature(hPrivate, RGX_FEATURE_##Feature##_BIT_MASK)
+			RGXDeviceHasFeature(hPrivate, RGX_FEATURE_##Feature##_ARRAY_INDEX, RGX_FEATURE_##Feature##_BIT_MASK)
 
 /* This is used to check if a specific feature with value is enabled.
  * Should be used instead of calling RGXDeviceGetFeatureValue.  */
@@ -241,7 +241,7 @@ IMG_INT32 RGXDeviceGetFeatureValue(const void *hPrivate, IMG_UINT64 ui64Feature)
  @Return         IMG_TRUE if the given feature is available, IMG_FALSE otherwise
 
 ******************************************************************************/
-IMG_BOOL RGXDeviceHasFeature(const void *hPrivate, IMG_UINT64 ui64Feature);
+IMG_BOOL RGXDeviceHasFeature(const void *hPrivate, IMG_UINT16 ui16FeatureIndex, IMG_UINT64 ui64Feature);
 
 /*!
 *******************************************************************************
@@ -360,6 +360,7 @@ PVRSRV_ERROR RGXPollReg64(const void *hPrivate,
                           IMG_UINT64 ui64RegValue,
                           IMG_UINT64 ui64RegMask);
 
+#if defined(RGX_FEATURE_META_MAX_VALUE_IDX)
 /*!
 *******************************************************************************
 
@@ -397,7 +398,7 @@ PVRSRV_ERROR RGXWriteMetaRegThroughSP(const void *hPrivate,
 PVRSRV_ERROR RGXReadMetaRegThroughSP(const void *hPrivate,
                                      IMG_UINT32 ui32RegAddr,
                                      IMG_UINT32* ui32RegValue);
-
+#endif
 /*!
 *******************************************************************************
 
@@ -747,6 +748,7 @@ void RGXTrampolineRemapConfig(const void *hPrivate,
 #endif
 #endif /* defined(RGX_FEATURE_MIPS_BIT_MASK) */
 
+#if defined(RGX_FEATURE_META_MAX_VALUE_IDX)
 /*!
 *******************************************************************************
 
@@ -761,6 +763,7 @@ void RGXTrampolineRemapConfig(const void *hPrivate,
 
 ******************************************************************************/
 IMG_BOOL RGXDoFWSlaveBoot(const void *hPrivate);
+#endif
 
 /*!
 *******************************************************************************

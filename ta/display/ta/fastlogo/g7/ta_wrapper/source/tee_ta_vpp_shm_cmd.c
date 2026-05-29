@@ -243,6 +243,31 @@ int MV_VPPOBJ_BindSHM(TEE_Param params[4])
     }
     break;
 
+    case VPP_MIPI_SENDCMD:
+    {
+        VPP_MIPI_CMD_PARAMS *pCmdParams;
+
+        shmAddr = (UINT8 *)params[1].memref.buffer;
+        Size = params[1].memref.size;
+        if (!shmAddr || Size < sizeof(VPP_MIPI_CMD_PARAMS)) {
+            res = TEE_ERROR_BAD_PARAMETERS;
+            break;
+        }
+
+        VPP_INIT_SHM_BUFFER_DESC(bufDesc, (void*)shmAddr, Size, VPP_SHM_BUFFER_TYPE_INPUT);
+        res = VPP_ValidateInput(&bufDesc, 0);
+        if(res != TEE_SUCCESS) {
+            break;
+        }
+
+        pCmdParams = (VPP_MIPI_CMD_PARAMS *)shmAddr;
+
+        params[2].value.a = MV_VPPOBJ_MipiPanelSendCmd(0,
+                                        (UINT8 *)(ARCH_PTR_TYPE)pCmdParams->pcmd,
+                                        pCmdParams->bufsize);
+    }
+    break;
+
     case VPP_GET_DISP_VOUTPARAMS:
     {
         shmAddr = (UINT8 *)params[1].memref.buffer;

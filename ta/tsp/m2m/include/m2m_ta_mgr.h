@@ -167,7 +167,7 @@ extern TA_M2M_CRYPTO_T gCryptoSrv;
 #define current_figohandle(uFigoId)     (((uFigoId) < TSP_FIGO_NR) ? (gCryptoSrv.ufigohdl[uFigoId]): NULL)
 
 #define M2M_CHECK_RETCODE(ret)  if ((ret) != SUCCESS)     \
-                        {TA_LOGF( "Err:%x @Line:%d\n", ret, __LINE__);goto error;}
+                        {TA_LOGF( "Err:%x @Line:%d\n", (uint32_t)ret, __LINE__);goto error;}
 #define M2M_CHECK_NULL(ptr)    if ((ptr) == 0)          \
                         {ret = ERR_NULL_PTR;goto error;}
 

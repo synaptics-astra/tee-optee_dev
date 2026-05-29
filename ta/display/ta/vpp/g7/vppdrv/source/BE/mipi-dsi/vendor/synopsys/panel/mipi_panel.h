@@ -35,4 +35,6 @@ void DSI_BYTE_WRITE(void *dev, unsigned char data1);
 void DSI_SHORT_WRITE(void *dev, unsigned char data1, unsigned char data2);
 void DSI_LONG_WRITE(void *dev, unsigned char data1, unsigned char data2, unsigned char data3,unsigned char data4);
 int mipi_panel_standby(struct mipi_dsi_dev *dev, unsigned char PanelID);
+int Panel_SendCmd(struct mipi_dsi_dev *dev, VPP_MIPI_CMD_TYPE enCmdType);
+int Panel_SendCmdBuf(struct mipi_dsi_dev *dev, UINT8 *pcmd, UINT16 bufsize);
 #endif

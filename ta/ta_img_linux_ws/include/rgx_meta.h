@@ -381,6 +381,7 @@ typedef struct
 #endif
 #define RGXFW_PROCESSOR_META        "META"
 
+#define METAFW_BOOT_DATA_FLAG_POWER_LOSS	(1U << 0)
 
 #endif /* RGX_META_H */
 

@@ -183,3 +183,16 @@ int VPP_BE_ConfigMIPIResinfo(int handle, int resID)
     return MV_VPP_OK;
 }
 
+int VPP_BE_MIPI_PanelSendCmd(VPP_OBJ *vpp_obj, VPP_MIPI_CMD_TYPE enCmdType)
+{
+    struct mipi_dsi_dev *pdev = (struct mipi_dsi_dev *)(vpp_obj->dsiInfo.pmipi_dsi_dev);
+
+    return Panel_SendCmd(pdev, enCmdType);
+}
+
+int VPP_BE_MIPI_PanelSendCmdBuf(VPP_OBJ *vpp_obj, UINT8 *pcmd, UINT16 bufsize)
+{
+    struct mipi_dsi_dev *pdev = (struct mipi_dsi_dev *)(vpp_obj->dsiInfo.pmipi_dsi_dev);
+
+    return Panel_SendCmdBuf(pdev, pcmd, bufsize);
+}

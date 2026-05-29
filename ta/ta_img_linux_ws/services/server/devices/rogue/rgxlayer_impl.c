@@ -400,8 +400,10 @@ IMG_INT32 RGXDeviceGetFeatureValue(const void *hPrivate, IMG_UINT64 ui64Feature)
 	return ui32FeaturesValues[ui64Feature];
 }
 
-IMG_BOOL RGXDeviceHasFeature(const void *hPrivate, IMG_UINT64 ui64Feature)
+IMG_BOOL RGXDeviceHasFeature(const void *hPrivate, IMG_UINT16 ui16FeatureIndex, IMG_UINT64 ui64Feature)
 {
+	(void)hPrivate;
+	(void)ui16FeatureIndex;
 	return (ui64DevFeatures & ui64Feature) != 0;
 }
 
@@ -498,6 +500,12 @@ void *RGXCalculateHostFWDataAddress(const void *hPrivate, void *pvHostFWDataAddr
 	PVR_UNREFERENCED_PARAMETER(hPrivate);
 
 	return pvHostFWDataAddr;
+}
+
+void RGXSetPoweredState(const void *hPrivate, IMG_BOOL bPowered)
+{
+	PVR_UNREFERENCED_PARAMETER(hPrivate);
+	PVR_UNREFERENCED_PARAMETER(bPowered);
 }
 
 IMG_BOOL RGXDeviceAckIrq(const void *hPrivate)

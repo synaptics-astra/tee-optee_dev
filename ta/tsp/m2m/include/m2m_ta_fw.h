@@ -232,8 +232,8 @@ HRESULT TSPFW_Crypto_Init(TSP_CRYPTO_LIB *pCryptoLib, int32_t uFigoId, UINT16 uC
 HRESULT TSPFW_Crypto_Deinit(TSP_CRYPTO_LIB *pCryptoLib, int32_t uFigoId);
 HRESULT TSPFW_Crypto_AllocFigoTask(TSP_CRYPTO_LIB *pCryptoLib, int32_t uFigoId);
 HRESULT TSPFW_Crypto_FreeFigoTask(TSP_CRYPTO_LIB *pCryptoLib, int32_t uFigoId);
-HRESULT TSPFW_Crypto_LoadFW(int32_t *pFigoId);
-HRESULT TSPFW_Crypto_UnloadFW(int32_t uFigoId);
+HRESULT TSPFW_Crypto_StartFW(int32_t *pFigoId);
+HRESULT TSPFW_Crypto_StopFW(int32_t uFigoId);
 
 #ifdef TA_COMPILE
 TEE_Result Drm_KeyMgr_TA_session_open(void);

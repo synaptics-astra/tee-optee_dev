@@ -33,7 +33,7 @@
 #ifdef TA_COMPILE
 #define LOG_TAG "TSP_TA"
 #include "config.h"
-#include "config_log.h"
+#include "tsp_config_log.h"
 #include "ta_log.h"
 
 typedef  unsigned char  BOOL;

@@ -6,27 +6,43 @@ TA_PATH := ./
 TA_MODULE     := libm2m.ta
 
 ### MODULE SOURCE FILE ###
-TA_SRC_FILES:= $(wildcard $(TA_PATH)/comm/source/*.c)
-TA_SRC_FILES+= $(wildcard $(AMPSDKTOP)/amp/src/ddl/dmx/tsp_driver/src/ta/source/*.c)
-TA_SRC_FILES+= $(TA_PATH)/../tsp/ta/source/tsp_mem_map.c
+TA_SRC_FILES += $(wildcard ./source/*.c)
+TA_SRC_FILES += ../tsp/source/tsp_mem_map.c
 
 ### MODULE CFLAGS/LDFLAGS ###
 TA_CFLAGS+=  -Wall -Werror -DTA_COMPILE  \
-             $(TEE_EXT_INC) \
-             -I$(TA_PATH)/comm/include/  \
-             -I$(AMPSDKTOP)/amp/src/ddl/dmx/tsp_driver/src/ta/include/  \
-             -I$(AMPSDKTOP)/amp/src/ddl/dmx/tsp_driver/inc/ \
-             -I$(AMPSDKTOP)/amp/src/ddl/dmx/comm/include/ \
-             -I$(TA_PATH)../tsp/ta/include \
-             -I$(TA_PATH)../drmse_ta/inc/ \
-             -I$(TA_PATH)../drm_common/inc/ \
-             -I$(TA_PATH)../drm_common/inc/bcm
+    -I../external_headers \
+    -I../tsp/include \
+    -I../tsp/tsp_fw/include/allinone \
+    -I./include  \
+    -I$(AMPSDKTOP)/ta_amp/drmse_ta/inc/ \
+    -I$(AMPSDKTOP)/ta_amp/drm_common/inc/ \
+    -I$(AMPSDKTOP)/ta_amp/drm_common/inc/bcm \
+    -I$(AMPSDKTOP)/ta_amp/bridge/drmse/include \
+    $(TEE_EXT_INC) \
+    -I$(TA_PATH)/comm/include/  \
+    -I$(AMPSDKTOP)/amp/src/ddl/dmx/tsp_driver/src/ta/include/  \
+    -I$(AMPSDKTOP)/amp/src/ddl/dmx/tsp_driver/inc/ \
+    -I$(AMPSDKTOP)/amp/src/ddl/dmx/comm/include/ \
+    -I$(TA_PATH)../tsp/ta/include \
+    -I$(TA_PATH)../drmse_ta/inc/ \
+    -I$(TA_PATH)../drm_common/inc/ \
+    -I$(TA_PATH)../drm_common/inc/bcm
 
 ifeq ($(SoC_Ver), $(filter $(SoC_Ver), VS550 BG5 BG4))
 TA_CFLAGS += -I$(AMPSDKTOP)/amp/src/ddl/dmx/tsp_driver/inc/ucode/legacy
 else
 #VS680 VS640 and future chips
 TA_CFLAGS += -I$(AMPSDKTOP)/amp/src/ddl/dmx/tsp_driver/inc/ucode/allinone
+endif
+
+TA_CFLAGS += -DCONFIG_ENABLE_DRM
+
+ifdef CONFIG_GENX_ENABLE
+$(info "CONFIG_GENX_ENABLE is defined")
+TA_CFLAGS += -DCONFIG_GENX_ENABLE
+else
+$(info "CONFIG_GENX_ENABLE is not defined")
 endif
 
 ### must be in the end of file ###

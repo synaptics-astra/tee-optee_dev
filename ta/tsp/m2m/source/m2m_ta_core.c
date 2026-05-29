@@ -418,13 +418,26 @@ static UINT8 MRVL_RuleTbl[32] =  {1,    0,    0,     1,   \
                                   0,    0,    0,     0,   \
                                   0,    1,    0,     0};
 
+static TEE_Result internal_check_mem_attr(UINT32 uMemId, BOOL *bSecure)
+{
+    TEE_Result ret = TEE_SUCCESS;
+
+    if (TEE_Check_Memory_Attr(uMemId, MEMATTR_NONSECURE | MEMATTR_ION)) {
+        *bSecure = FALSE;
+    } else if (TEE_Check_Memory_Attr(uMemId, MEMATTR_SECURE | MEMATTR_ION)) {
+        *bSecure = TRUE;
+    } else {
+        ret = TEE_ERROR_BAD_PARAMETERS;
+    }
+    return ret;
+}
+
 static BOOL internal_sess_secure_rule_checker(TA_M2M_SESS_T *pSess,
                                                      TA_M2M_BUFF_T *pInputBuf,
                                                      TA_M2M_BUFF_T *pOutputBuf)
 {
     TEE_Result ret = TEE_SUCCESS;
     TEE_Identity identity;
-    TEE_MemRegion region;
     uint8_t i = 0;
     BOOL bKeyOption = FALSE;
     BOOL bCipher= FALSE, bProtected = FALSE;
@@ -432,7 +445,6 @@ static BOOL internal_sess_secure_rule_checker(TA_M2M_SESS_T *pSess,
     BOOL bLegalTA = FALSE;
     uint32_t bValidKeyUser = FALSE;
     uint32_t uRuleId = 0;
-    TEE_UUID uuidZero = {0};
     TEE_UUID taltsuuid = TALTS_UUID;
     TEE_UUID ccluuid = CCL_UUID;
     TEE_UUID nagra_ta_uuid_high_bytes = NAGRA_TA_UUID_HIGH_BYTES;
@@ -518,21 +530,19 @@ static BOOL internal_sess_secure_rule_checker(TA_M2M_SESS_T *pSess,
         bKeyOption = (pSess->CryptoConfig.KeyOption == M2MCRYPTO_KEY_INDEX)? TRUE:FALSE;
         TA_LOGH("REE CA calling\n");
     }
-    ret = TEE_FindMemRegion(&region, pInputBuf->virAddr, pInputBuf->uBufSize);
-    M2M_CHECK_RETCODE(ret);
-    if (!TEE_MR_USER_IS_ION(&region)) {
-        TA_LOGE("SESS[%d] Input buffer not allocated from ION\n", pSess->uSessId);
+    ret = internal_check_mem_attr(pInputBuf->memID, &bInput);
+    if (ret != TEE_SUCCESS) {
+      TA_LOGE("SESS[%d] Input buffer[%"PRIx32"] not physical continuous\n",
+            pSess->uSessId, pInputBuf->memID);
         return FALSE;
     }
-    bInput = MR_IS_SECURE(&region)?TRUE:FALSE;
 
-    ret = TEE_FindMemRegion(&region, pOutputBuf->virAddr, pOutputBuf->uBufSize);
-    M2M_CHECK_RETCODE(ret);
-    if (!TEE_MR_USER_IS_ION(&region)) {
-        TA_LOGE("SESS[%d] Output buffer not allocated from ION\n", pSess->uSessId);
+    ret = internal_check_mem_attr(pOutputBuf->memID, &bOutput);
+    if (ret != TEE_SUCCESS) {
+      TA_LOGE("SESS[%d] Output buffer[%"PRIx32"] not physical continuous\n",
+            pSess->uSessId, pOutputBuf->memID);
         return FALSE;
     }
-    bOutput = MR_IS_SECURE(&region)?TRUE:FALSE;
 
     uRuleId = bCipher<<4|bProtected<<3|bKeyOption<<2|bInput<<1|bOutput;
     TA_LOGH("[Schm 0x%x][Index 0x%02x] Cipher,Protected,bKeyOption,Src,Dest:%d%d%d%d%d-%d\n",
@@ -563,9 +573,6 @@ static BOOL internal_sess_secure_rule_checker(TA_M2M_SESS_T *pSess,
         }
     }
     return true;
-
-error:
-    return ret;
 }
 
 #endif
@@ -623,7 +630,6 @@ static HRESULT Internal_Session_DTCM_Free(TA_M2M_SESS_HANDLE hSess)
     HRESULT ret = SUCCESS;
 #ifdef TA_COMPILE
     TEE_Identity identity;
-    TEE_UUID uuidZero = {0};
 #endif
 
     TA_LOGH( "Free Sess DTCM [%p][%d]\n", hSess, hSess->uSessId);
@@ -692,14 +698,14 @@ HRESULT M2M_TA_Core_FreeFigoTask(UINT32 uFigoId)
     return TSP_CryptoFreeFigoTask(uFigoId);
 }
 
-HRESULT M2M_TA_Core_LoadFw(UINT32 *pFigoId)
+HRESULT M2M_TA_Core_StartFw(UINT32 *pFigoId)
 {
-    return TSP_CryptoLoadFw((int32_t *)pFigoId);
+    return TSP_CryptoStartFw((int32_t *)pFigoId);
 }
 
-HRESULT M2M_TA_Core_UnloadFw(UINT32 uFigoId)
+HRESULT M2M_TA_Core_StopFw(UINT32 uFigoId)
 {
-    return TSP_CryptoUnLoadFw(uFigoId);
+    return TSP_CryptoStopFw(uFigoId);
 }
 
 HRESULT M2M_TA_Core_Session_SetScheme(TA_M2M_SESS_HANDLE hSess, M2MCRYPTO_TYPE eScheme)
@@ -753,7 +759,6 @@ HRESULT M2M_TA_Core_Session_Config(TA_M2M_SESS_HANDLE hSess,
 #ifdef TA_COMPILE
     TEE_Identity identity;
     TEE_MemRegion region;
-    TEE_UUID uuidZero = {0};
     UINT8 *pKeyData = pKeyBuf->virAddr;
     UINT8 *pIVData = pIVBuf->virAddr;
     UINT32 KeyLength = pKeyBuf->uBufSize;

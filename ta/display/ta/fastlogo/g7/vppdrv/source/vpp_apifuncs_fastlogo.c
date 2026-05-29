@@ -218,48 +218,31 @@ int MV_VPPOBJ_SetHdmiTxControl(int handle, int enable)
 }
 
 #ifdef CONFIG_VPP_ENABLE_DELAY_BY_LOOP
-static void delay_cycles(unsigned long cycles)
-{
-    cycles /= 2;
-    __asm__ __volatile__ (
-        "1: subs    %0, %0, #1  \n\t"
-        "   bhi 1b      \n\t"
-        : "+r" (cycles)
-        :
-        : "cc"
-        );
-}
-static void ndelay(unsigned int ns)
-{
-#ifndef CPUPLL
-#define CPUPLL  1000
-#endif
-
-    unsigned long cycles = (unsigned long)((uint64_t)ns * CPUPLL / 1000);
-    delay_cycles(cycles);
-}
-static void udelay(unsigned int us)
-{
-    const unsigned int step_us = 1000000;
-    const unsigned int step_ns = 1000 * step_us;
-    while (us > step_us) {
-        ndelay(step_ns);
-        us -= step_us;
-    }
-    if (us)
-        ndelay(1000 * us);
-}
-
+/*
+ * Poll TEE_GetSystemTime until at least 'ms' milliseconds have elapsed.
+ * TEE_Time resolution is milliseconds, so sub-millisecond delays are
+ * rounded up to 1 ms.
+ */
 static void mdelay(unsigned int ms)
 {
-    const unsigned int step_ms = 1000000;
-    const unsigned int step_us = 1000 * step_ms;
-    while (ms > step_ms) {
-        udelay(step_us);
-        ms -= step_ms;
-    }
-    if (ms)
-        udelay(1000 * ms);
+    TEE_Time t0, t1;
+    uint32_t elapsed_ms;
+
+    if (ms == 0)
+        return;
+
+    TEE_GetSystemTime(&t0);
+    do {
+        TEE_GetSystemTime(&t1);
+        elapsed_ms = (t1.seconds - t0.seconds) * 1000u +
+                     (uint32_t)((int32_t)t1.millis - (int32_t)t0.millis);
+    } while (elapsed_ms < ms);
+}
+
+static void udelay(unsigned int us)
+{
+    /* TEE_Time is ms-granular; round up to at least 1 ms */
+    mdelay(us < 1000u ? 1u : us / 1000u);
 }
 #endif //CONFIG_VPP_ENABLE_DELAY_BY_LOOP
 

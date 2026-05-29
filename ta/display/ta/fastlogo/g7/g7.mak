@@ -14,6 +14,8 @@ ifeq ($(SoC_Ver), $(filter $(SoC_Ver), platypus))
     chip = platypus
 endif
 
+COMMON_PATH     := $(TA_PATH)/../../hal/common
+
 ########chip head file#####
 ifeq ($(CONFIG_AMP_THDR), y)
     TA_C_INCLUDES  += $(VPPTA_SPECIFIC_FOLDER)/source/FE/include/thdr
@@ -55,7 +57,7 @@ ifeq ($(CONFIG_AMP_DCM), y)
 endif
 
 TA_C_INCLUDES += $(VPPTA_SPECIFIC_FOLDER)/../ta_wrapper/common
-TA_SRC_FILES += $(wildcard $(VPPTA_SPECIFIC_FOLDER)/../../lib/common/include/mmap/*.c)
+TA_SRC_FILES += $(wildcard $(COMMON_PATH)/include/mmap/*.c)
 TA_SRC_FILES += $(wildcard $(VPPTA_SPECIFIC_FOLDER)/../ta_wrapper/common/*.c)
 TA_SRC_FILES += $(wildcard $(VPPTA_SPECIFIC_FOLDER)/../ta_wrapper/source/$(chip)$(ver)/*.c)
 TA_SRC_FILES += $(wildcard $(VPPTA_SPECIFIC_FOLDER)/source/MISC/source/$(chip)$(ver)/*.c)

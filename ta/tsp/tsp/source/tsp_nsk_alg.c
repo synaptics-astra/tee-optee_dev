@@ -21,7 +21,7 @@
 #include <string.h>
 #include "tsp_ta_internal.h"
 #include "tee_internal_api.h"
-#include "config_log.h"
+#include "tsp_config_log.h"
 #include "ta_log.h"
 #include "tsp_nsk_alg.h"
 #include "tsp_fw_spec.h"

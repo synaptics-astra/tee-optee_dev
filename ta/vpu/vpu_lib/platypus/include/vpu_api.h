@@ -621,7 +621,9 @@ TYPEDEF_STRUCT(vdec_seq_desc_t)
     // for av1 only
     unsigned char   film_grain_params_present;//!< Film grain parameters are present(1) or not(0).
     unsigned char   operating_points_cnt;     //!< Number of operating points.
-    void           *operating_point_level;    //!< Levels that each operating point conforms to.
+    void           *operating_point_idc;      //!< Idc of each operating point.
+    void           *operating_point_level;    //!< Level that each operating point conforms to.
+    void           *operating_point_tier;     //!< Tier that each operating point conforms to.
 
     unsigned short  num_tiles;                //!< Number of TILEs in a frame.
 };

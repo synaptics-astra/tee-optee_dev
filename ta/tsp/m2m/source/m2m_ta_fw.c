@@ -204,30 +204,6 @@ static TEE_Result TspTA_Task_Free(UINT8 figoid, INT task_id)
       return res;
 }
 
-static TEE_Result TspTA_Load_Fw(UINT32 uPgIdx, UINT32 figoid)
-{
-      TEE_Result res = TEE_SUCCESS;
-      uint32_t        cancellationTimeout = 0;
-      uint32_t        core_paramTypes;
-      TEE_Param       core_params[4] = {{.value.a = 0, .value.b = 0}};
-      uint32_t        returnOrigin;
-
-      core_paramTypes = TEE_PARAM_TYPES( TEE_PARAM_TYPE_VALUE_INPUT,
-                                         TEE_PARAM_TYPE_NONE,
-                                         TEE_PARAM_TYPE_NONE,
-                                         TEE_PARAM_TYPE_NONE);
-
-      core_params[0].value.a = uPgIdx;
-      res = TEE_InvokeTACommand(TSP_TA_session[figoid], cancellationTimeout, TSP_FW_LOAD,
-                        core_paramTypes, core_params,&returnOrigin);
-      if (res != TEE_SUCCESS) {
-              TA_LOGF("fail to setscheme. result=0x%08x, origin=%d, session=%p\n",
-                                       res, returnOrigin, TSP_TA_session[figoid]);
-              return TEE_ERROR_NOT_SUPPORTED;
-      }
-      return res;
-}
-
 static TEE_Result TspTA_Sched_Figo(UINT32 *pFigoId, UINT32 *pFWIdx, UINT32 *pNeedReload)
 {
       TEE_Result res = TEE_SUCCESS;
@@ -446,7 +422,7 @@ TEE_Result Drm_SE_GetContentKeyInfo(M2M_DRM_CRYPTO_ST   *pCryptInfo,
     }
     res = TEE_AddSharedMemoryAccess(ShmIdContentKeyUnitAttr, uuid, TEE_SHM_PEER_READWRITE | TEE_SHM_PEER_GRANT);
     if (res != TEE_SUCCESS) {
-        TA_LOGF( "TEE_AddSharedMemoryAccess fail, ret = 0x%x\n", res);
+        TA_LOGF( "TEE_AddSharedMemoryAccess fail, ret = 0x%08x\n", res);
         goto fun_ret;
     }
 
@@ -1336,7 +1312,7 @@ static HRESULT TSPFW_Crypto_SendStartStallCmd(FIGODRV_HANDLE hFigoDrv, UNSG32 uC
     return SUCCESS;
 }
 
-HRESULT TSPFW_Crypto_LoadFW(int32_t *pFigoId)
+HRESULT TSPFW_Crypto_StartFW(int32_t *pFigoId)
 {
     TEE_Result res = TEE_SUCCESS;
     UNSG32 uPgIdx = 0, uNeedReload = 0;
@@ -1349,7 +1325,6 @@ HRESULT TSPFW_Crypto_LoadFW(int32_t *pFigoId)
         hFigoDrv = current_figohandle(*pFigoId);
         TSPFW_Crypto_ResetFIGO(hFigoDrv, 0);
         TspTA_session_open(*pFigoId);
-        TspTA_Load_Fw(uPgIdx, *pFigoId);
         TSPFW_Crypto_ReleaseFIGO_FromPC(hFigoDrv, 0);
         TSPFW_Crypto_SendStartStallCmd(hFigoDrv, StallCmd_CMD_cmdTag_RUN);
         TEE_CloseTASession(TSP_TA_session[*pFigoId]);
@@ -1358,7 +1333,7 @@ HRESULT TSPFW_Crypto_LoadFW(int32_t *pFigoId)
     return res;
 }
 
-HRESULT TSPFW_Crypto_UnloadFW(int32_t uFigoId)
+HRESULT TSPFW_Crypto_StopFW(int32_t uFigoId)
 {
     TEE_Result res = TEE_SUCCESS;
 
@@ -1369,12 +1344,12 @@ HRESULT TSPFW_Crypto_UnloadFW(int32_t uFigoId)
     return res;
 }
 #else
-HRESULT TSPFW_Crypto_LoadFW(int32_t *pFigoId)
+HRESULT TSPFW_Crypto_StartFW(int32_t *pFigoId)
 {
     return TEE_SUCCESS;  //for non_tz version, load fw will call api from startup.c
 }
 
-HRESULT TSPFW_Crypto_UnloadFW(int32_t uFigoId)
+HRESULT TSPFW_Crypto_StopFW(int32_t uFigoId)
 {
     return TEE_SUCCESS;  //for non_tz version, load fw will call api from startup.c
 }

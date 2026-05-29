@@ -47,7 +47,7 @@
 #define SECURE_CHECK_CNT_THRESHOLD 200
 
 #define TSP_CHECK_RETCODE(ret)  if ((ret) != TEE_SUCCESS)     \
-                        {TA_LOGF( "Err:%x @Line:%d\n", ret, __LINE__);goto end;}
+                        {TA_LOGF( "Err:0x%x @Line:%d\n", ret, __LINE__);goto end;}
 
 typedef struct TEE_TspContext
 {

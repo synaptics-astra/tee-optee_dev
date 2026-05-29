@@ -43,6 +43,8 @@ extern "C"
 {
 #endif
 
+#include <stdint.h>
+
 /** \struct _M2MCRYPTO_MEMOBJ
  *  \typedef M2MCRYPTO_MEM_H
  *  \brief The structure of memory handle to indicate both AMP SHM handle/offset

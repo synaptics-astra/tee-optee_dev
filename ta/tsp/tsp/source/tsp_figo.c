@@ -30,7 +30,7 @@
 #include "tee_api_syna.h"
 #endif
 #include "mem_region_userdata.h"
-#include "config_log.h"
+#include "tsp_config_log.h"
 #include "ta_log.h"
 #include "tsp_fw_spec.h"
 #include "tsp.h"

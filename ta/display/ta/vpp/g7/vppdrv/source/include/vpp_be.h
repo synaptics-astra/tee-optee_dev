@@ -638,6 +638,9 @@ int VPP_BE_GetSinkFeatureMap (VPP_OBJ *vpp_obj, VPP_HDMI_SINKCAP_BITMASK *pSinkF
 
 void VPP_BE_HdmiPowerDown(VPP_OBJ *vpp_obj);
 
+int VPP_BE_MIPI_PanelSendCmd(VPP_OBJ *vpp_obj, VPP_MIPI_CMD_TYPE enCmdType);
+int VPP_BE_MIPI_PanelSendCmdBuf(VPP_OBJ *vpp_obj, UINT8 *pcmd, UINT16 bufsize);
+
 #ifdef __cplusplus
 }
 #endif

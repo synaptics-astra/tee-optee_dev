@@ -1013,6 +1013,11 @@ PVRSRV_ERROR RGXProcessFWImage(const void *hPrivate,
 			 */
 			pui32BootConf = ((IMG_UINT32*) pvFWCode) + RGXFW_BOOTLDR_CONF_OFFSET;
 
+			*pui32BootConf = 0;
+			pui32BootConf++;
+			*pui32BootConf = 0;
+			pui32BootConf++;
+
 			/* Slave port and JTAG accesses are privileged */
 			*pui32BootConf++ = META_CR_SYSC_JTAG_THREAD;
 			*pui32BootConf++ = META_CR_SYSC_JTAG_THREAD_PRIV_EN;
@@ -1158,6 +1163,8 @@ PVRSRV_ERROR RGXProcessFWImage(const void *hPrivate,
 			psBootData->ui64CorememDataDevVAddr = puFWParams->sRISCV.sFWCorememDataDevVAddr.uiAddr;
 			psBootData->ui32CorememDataFWAddr   = puFWParams->sRISCV.sFWCorememDataFWAddr.ui32Addr;
 			psBootData->ui32CorememDataSize     = puFWParams->sRISCV.uiFWCorememDataSize;
+
+			psBootData->ui32Flags				= 0;
 		}
 	}
 

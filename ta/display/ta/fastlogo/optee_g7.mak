@@ -20,7 +20,7 @@ endif
 TA_LIB_PATH     := $(TA_PATH)
 DHUB_PATH       := $(VPPTA_SPECIFIC_FOLDER)/../../lib/dhub
 OSAL_PATH       := $(VPPTA_SPECIFIC_FOLDER)/../../lib/osal
-COMMON_PATH     := $(VPPTA_SPECIFIC_FOLDER)/../../lib/common
+COMMON_PATH     := $(TA_PATH)/../../hal/common
 VPPDRV_PATH1     := $(CHIP_SPECIFIC_FOLDER)/vppdrv
 TAWRAPPER_PATH  := $(CHIP_SPECIFIC_FOLDER)/ta_wrapper
 DRM_COMMON_PATH := $(TA_PATH)/../drm_common

@@ -64,15 +64,13 @@
 #include "tsp_filter_page1_figo.h"
 #endif
 
-#include "config_log.h"
+#include "tsp_config_log.h"
 #include "ta_log.h"
 #include "tsp_comm.h"
 #include "tsp_parse_gop_hdr.h"
 #include "tsp_figo.h"
-#if defined(CONFIG_GENX_ENABLE)
 #include "bcm_mailbox.h"
 #include "bcm_status.h"
-#endif
 
 #ifdef CONFIG_ENABLE_DRM
 #include "drm_se_ta.h"
@@ -152,16 +150,10 @@ static void *TSPTA_SavRes_va[TSP_MAX_FIGO_NUM] = {NULL, NULL};         /* suspen
 static TSPTA_RegInfo TSPTA_Reg_Info[] = {
 /* figo id,                 base addr,                  size(byte) */
     {0     ,RA_TspReg_FigoDtcm - TSPREG_FIGO0_BASE      ,Private_Define_Dtcm_Base   },
-#if !defined(CONFIG_GENX_ENABLE)
-    {0     ,RA_TspReg_FigoItcm - TSPREG_FIGO0_BASE      ,0x10000                    },
-#endif
     {0     ,RA_TspReg_PidTbl                            ,0x800                      },
     {0     ,RA_TspReg_SecTbl                            ,0x800                      },
     {0     ,RA_TspReg_IntReg + RA_TspIntReg_hw_block_int_enable ,0x34               },
     {1     ,RA_TspReg_Figo1Dtcm - TSPREG_FIGO1_BASE     ,Private_Define_Dtcm_Base   },
-#if !defined(CONFIG_GENX_ENABLE)
-    {1     ,RA_TspReg_Figo1Itcm - TSPREG_FIGO1_BASE     ,0x10000                    },
-#endif
 };
 
 static uint32_t TSPTA_HBO_FIFO_TSI_list[] = {
@@ -610,20 +602,44 @@ static TEE_Result TSPTA_FWLoad(void* sessionContext,
 // TSP FW in VS640GenX is loaded by BCM, not TSP TA
 // Defining DEBUG_LOAD can force loading the FW by TSP TA, for debugging purpose
 #ifdef USE_DHUB_LITE_AND_ONE_ITCM
-// for rdk 640, TSP fw should loaded by BCM. But for now, BCM still cannot load it
-// so here we need to load it by TSP TA
-// [TODO: after BCM can load it, remove BERLIN_PRODUCT_FOR_RDK use CONFIG_GENX_ENABLE
-//  instead]
-#if (BERLIN_CHIP_VERSION == BERLIN_VS680) || defined(DEBUG_LOAD)  \
-    || ((BERLIN_CHIP_VERSION == BERLIN_VS640) && defined(BERLIN_PRODUCT_FOR_RDK))
+    TEE_Result ret = TEE_SUCCESS;
+    BCM_MAILBOX_COMMAND cmd;
+    BCM_MAILBOX_STATUS status = {0};
     static bool  gItcmIsLoaded = false;
-    uint32_t uInsItcm;
-    uPCStartPhy = TSP_FIGO_REG_BASE+ TSP_FIGO0_ITCM_BASE;
-    uPCStartVir = tspmem_phy_to_virt(uPCStartPhy);
-    uInsNum =  sizeof(tsp_filter_allinone_figo)/4;
-    uInsItcm = TSP_FIGO_ITCM_SIZE/4;
 
-    if(!gItcmIsLoaded) {
+    // params[0].value.b is force load flag, if it's set to 1
+    // tsp.fw is located at SRAM, but TA is located at DDR. After suspend/resume,
+    // the SRAM content will be lost, so we need to reload the fw by force.
+    if (gItcmIsLoaded && (params[0].value.b != 1)) {
+        TA_LOGM("FW already loaded, skip loading again\n");
+        return TEE_SUCCESS;
+    }
+
+    // tsp.fw's physical address and size are passed in by BCM through params[1].value.a and params[1].value.b,
+    // if param type is value input.
+    if (TEE_PARAM_TYPE_GET(paramTypes, 1) == TEE_PARAM_TYPE_VALUE_INPUT) {
+        // GENX has enc fw in rootfs loaded by kernel
+        TA_LOGH("Call BCM to load fw [0x%x] size [0x%x]\n", params[1].value.a,
+                                                             params[1].value.b);
+        cmd.arg0 = params[1].value.a;
+        cmd.arg1 = params[1].value.b;
+        // tsp kernel driver has do cache flush, so no need to do cache maintenance here.
+        ret = TEE_ExecCmd(BCM_KERNEL_PI_VERIFY_TSP_FW, &cmd, sizeof(BCM_MAILBOX_COMMAND),
+                        &status, sizeof(BCM_MAILBOX_STATUS));
+        if (ret != TEE_SUCCESS) {
+            TA_LOGE("Error in sending load firmware command: 0x%x\n", ret);
+            return ret;
+        }
+        gItcmIsLoaded = true;
+    // if param type is none, means non encoded tsp.fw is found. So load clear tsp.fw from TA itself.
+    } else if (TEE_PARAM_TYPE_GET(paramTypes, 1) == TEE_PARAM_TYPE_NONE) {
+        // GEN2 no enc fw in rootfs, need load inside ta
+        uint32_t uInsItcm;
+        uPCStartPhy = TSP_FIGO_REG_BASE+ TSP_FIGO0_ITCM_BASE;
+        uPCStartVir = tspmem_phy_to_virt(uPCStartPhy);
+        uInsNum =  sizeof(tsp_filter_allinone_figo)/4;
+        uInsItcm = TSP_FIGO_ITCM_SIZE/4;
+
         TA_LOGH("In %s:%d, 0x%lx, 0x%x\n",__FUNCTION__,__LINE__, uPCStartPhy, uInsNum);
 
         for (i = 0; i < uInsItcm; i++)
@@ -637,15 +653,10 @@ static TEE_Result TSPTA_FWLoad(void* sessionContext,
             *((volatile UNSG32 *)(uPCStartVir + (i<<2))) = tsp_filter_allinone_figo[i+uInsItcm];
         }
         gItcmIsLoaded = true;
+    } else {
+        TA_LOGE("Invalid param type for fw load: 0x%x\n", TEE_PARAM_TYPE_GET(paramTypes, 1));
+        return TEE_ERROR_BAD_PARAMETERS;
     }
-#else
-    // avoid 'unused variables' errors reported by compiler
-    (void)uInsNum;
-    (void)uPCStartPhy;
-    (void)uPCStartVir;
-    (void)i;
-    TA_LOGH("No TSP FW loaded by TSP TA on VS640GenX\n");
-#endif
 #else
     uint32_t uFwIdx = 0;
     TEE_TspContext* pTspCtx = (TEE_TspContext*)sessionContext;
@@ -737,18 +748,19 @@ static TEE_Result TSPTA_AllocTask(void* sessionContext,
     uint32_t i;
     uint16_t task_addr;
     TEE_TspContext* pTspCtx = (TEE_TspContext*)sessionContext;
-    uint16_t * pTaskItem = (uint16_t *)tspmem_phy_to_virt(pTspCtx->hdl.mem + RA_TspDtcmGlobal_SCHED);
+    volatile uint16_t * pTaskItem = (uint16_t *)tspmem_phy_to_virt(pTspCtx->hdl.mem + RA_TspDtcmGlobal_SCHED);
 
     if (TEE_PARAM_TYPE_GET(paramTypes, 0) != TEE_PARAM_TYPE_VALUE_INPUT ||
         TEE_PARAM_TYPE_GET(paramTypes, 1) != TEE_PARAM_TYPE_VALUE_OUTPUT)
             return TEE_ERROR_BAD_PARAMETERS;
 
     task_addr = params[0].value.a;
-    TA_LOGH("%s:%d, task_addr = 0x%x\n",__FUNCTION__,__LINE__, task_addr);
 
     if(pTaskItem)
     {
         for (i =0;i<(2*arr_TspDtcmGlobal_TaskList); i++){
+            TA_LOGH("%s:%d, pTaskItem[%d] addr 0x%x task_addr 0x%x\n",
+                    __FUNCTION__,__LINE__, i, pTaskItem[i], task_addr);
             if (pTaskItem[i] == INVALID_DTCM_ADDR) {
                 pTaskItem[i] = task_addr;
                 params[1].value.a = i;
@@ -878,7 +890,7 @@ static TEE_Result TSPTA_SetFigoClk(void *sessionContext,
     bRefClk = params[0].value.a;
     if ((bRefClk && params[0].value.b >= TSP_REF_CLK_SET_MAX) ||
         (!bRefClk && params[0].value.b >= TSP_CLK_SET_MAX)) {
-        TA_LOGE("Bad Parameters: bRefClk %u, Clock %u\n", bRefClk, params[0].value.b);
+        TA_LOGE("Bad Parameters: bRefClk %d, Clock %d\n", bRefClk, params[0].value.b);
         return TEE_ERROR_BAD_PARAMETERS;
     }
 
@@ -1258,7 +1270,7 @@ static TEE_Result TSPTA_UpdateHboinFilters(void* sessionContext,
 
     uInputBuf = params[0].value.a;
     if(uInputBuf < RA_TspDtcmGlobal_HBOIN || uInputBuf >= RA_TspDtcmGlobal_VESHDR) {
-        TA_LOGE("invalid hboin address %#x\n", uInputBuf);
+        TA_LOGE("invalid hboin address 0x%x\n", uInputBuf);
         return TEE_ERROR_BAD_PARAMETERS;
     }
 

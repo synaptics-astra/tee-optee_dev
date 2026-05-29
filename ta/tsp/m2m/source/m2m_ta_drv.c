@@ -375,14 +375,14 @@ HRESULT TSP_CryptoFreeFigoTask(int32_t uFigoId)
     return TSPFW_Crypto_FreeFigoTask(&gTspCryptoLib, uFigoId);
 }
 
-HRESULT TSP_CryptoLoadFw(int32_t *pFigoId)
+HRESULT TSP_CryptoStartFw(int32_t *pFigoId)
 {
-    return TSPFW_Crypto_LoadFW(pFigoId);
+    return TSPFW_Crypto_StartFW(pFigoId);
 }
 
-HRESULT TSP_CryptoUnLoadFw(int32_t uFigoId)
+HRESULT TSP_CryptoStopFw(int32_t uFigoId)
 {
-    return TSPFW_Crypto_UnloadFW(uFigoId);
+    return TSPFW_Crypto_StopFW(uFigoId);
 }
 
 HRESULT TSP_CryptoProcess(M2M_TA_CRYPTO_CMD *pDatChunkCmd, int32_t uFigoId)

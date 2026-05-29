@@ -4321,6 +4321,7 @@ int MV_VPPOBJ_ProcessNxgGetCommand(int handle, int nxgEmbedderId, int nxgCmdId, 
 int MV_VPPOBJ_LoadHdcpKeys(INT handle, VPP_HDCP_KEYSTORE_DATA *keystore);
 
 int MV_VPPOBJ_LoadMipiConfig(int handle, VPP_MIPI_LOAD_CONFIG *pConfigparams);
+int MV_VPPOBJ_MipiPanelSendCmd(int handle, UINT8 *pcmd, UINT16 bufsize);
 
 int MV_VPPOBJ_GetMemId(int handle, UINT phy_addr, UINT32 phy_size, UINT *pMemId);
 int MV_VPPOBJ_PutMemId(int handle, UINT32 MemId);

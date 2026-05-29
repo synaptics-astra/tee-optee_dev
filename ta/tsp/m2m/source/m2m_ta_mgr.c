@@ -82,25 +82,6 @@ static int  DMXTA_CHECKFIGOID(uint32_t id)
     return TEE_SUCCESS;
 }
 
-static TEE_Result CallFromCA(BOOL *bIsFromCA)
-{
-    TEE_Result res = TEE_SUCCESS;
-    TEE_Identity identity;
-    TEE_UUID uuidZero = {0};
-
-    res = TEE_GetPropertyAsIdentity(TEE_PROPSET_CURRENT_CLIENT, "gpd.client.identity", &identity);
-    if (res != TEE_SUCCESS) {
-        TA_LOGF( "TEE_GetPropertyAsIdentity fail with 0x%x\n", res);
-    } else {
-        if (identity.login != TEE_LOGIN_TRUSTED_APP) {
-            *bIsFromCA = TRUE;
-        } else {
-            *bIsFromCA = FALSE;
-        }
-    }
-    return res;
-}
-
 /* Should do nothing in TA create/destroy entry point */
 TEE_Result TA_EXPORT TA_CreateEntryPoint(void)
 {
@@ -149,7 +130,7 @@ TEE_Result TA_OpenSessionEntryPoint(uint32_t        paramTypes,
         pM2MCtx->bDummy = (params[0].value.b == 1) ? true : false;
 
         if(!pM2MCtx->bDummy){
-            res =M2M_TA_Core_LoadFw(&uFigosysId);
+            res =M2M_TA_Core_StartFw(&uFigosysId);
             if(res != TEE_SUCCESS){
                 TA_LOGF( "Faild to Load FW\n");
                 goto error;
@@ -158,6 +139,8 @@ TEE_Result TA_OpenSessionEntryPoint(uint32_t        paramTypes,
                     res = M2M_TA_Core_AllocFigoTask(uFigosysId);
                     if(res != TEE_SUCCESS){
                         TA_LOGF( "Faild to Alloc figo task\n");
+                        M2M_TA_Core_StopFw(uFigosysId);
+                        goto error;
                     }
                 }
             }
@@ -172,7 +155,12 @@ TEE_Result TA_OpenSessionEntryPoint(uint32_t        paramTypes,
         goto error;
     }
     TA_LOGH( "TA_OpenSessionEntryPoint out\n");
+
+    return TEE_SUCCESS;
 error:
+    if(pM2MCtx) {
+        M2M_TA_Core_Session_Close(pM2MCtx);
+    }
     return res;
 }
 
@@ -189,7 +177,7 @@ void TA_CloseSessionEntryPoint(void*  sessionContext)
             if(gCryptoSrv.uFigoSessRefCnt[pM2MCtx->uFigoSysId] == 0){
                 M2M_TA_Core_FreeFigoTask(pM2MCtx->uFigoSysId);
             }
-            res = M2M_TA_Core_UnloadFw(pM2MCtx->uFigoSysId);
+            res = M2M_TA_Core_StopFw(pM2MCtx->uFigoSysId);
         }
 
         if (res != TEE_SUCCESS) {
@@ -240,7 +228,7 @@ static TEE_Result M2MTA_CryptoInit(void* sessionContext,
     gCryptoSrv.ufigohdl[uFigoId] = dmx_malloc(sizeof(MV_FIGODRV_CTX));
     TA_LOGH( "M2MTA_CryptoInit, %p\n", gCryptoSrv.ufigohdl[uFigoId]);
     if(gCryptoSrv.ufigohdl[uFigoId] == NULL) {
-        TA_LOGF("Figo %d malloc NULL\n", uFigoId);
+        TA_LOGF("Figo[%d] malloc NULL\n", uFigoId);
         return TEE_ERROR_OUT_OF_MEMORY;
     }
 
@@ -257,7 +245,6 @@ static TEE_Result M2MTA_CryptoInit(void* sessionContext,
     hFigoDrv->uBIUSize = TSP_FIGO_REG_SIZE;
     hFigoDrv->uDTCMRegBase = RA_TspReg_FigoDtcm;
     hFigoDrv->uFigoSysStart = RA_TspReg_FigoReg;
-
 
     if (TEE_PARAM_TYPE_GET(paramTypes, 1) != TEE_PARAM_TYPE_NONE &&
         TEE_PARAM_TYPE_GET(paramTypes, 1) == TEE_PARAM_TYPE_MEMREF_INPUT) {
@@ -365,7 +352,7 @@ static TEE_Result M2MTA_CryptoDeinit(void* sessionContext,
         dmx_free(gCryptoSrv.ufigohdl[uFigoId]);
         gCryptoSrv.ufigohdl[uFigoId] = NULL;
     } else {
-        TA_LOGH("Figo %d handle DeInitialized\n", uFigoId);
+        TA_LOGH("Figo[%d] handle DeInitialized\n", uFigoId);
         return TEE_SUCCESS;
     }
 
@@ -435,11 +422,6 @@ static TEE_Result M2MTA_Setkey(void* sessionContext,
     #if 0
     MV_OSAL_Mutex_Lock(pM2MCtx->SessionMutexLock);
     #endif
-
-    // BOOL bIsFromCA;
-    // res = CallFromCA(&bIsFromCA);
-    // if (res != TEE_SUCCESS)
-    //     return res;
 
     memset(&KeyBuf, 0, sizeof(TA_M2M_BUFF_T));
     memset(&IVBuf, 0, sizeof(TA_M2M_BUFF_T));

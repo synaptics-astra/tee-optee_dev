@@ -131,6 +131,7 @@ static TEE_Result DRM_TA_AES_GCM_ENCRY_DECRY(TEE_Param params[4])
     uint8_t *iv_buf = (uint8_t *)params[2].memref.buffer;
     uint8_t *aad_buf = (uint8_t *)params[3].memref.buffer;
     size_t aad_len = params[3].memref.size;
+    size_t tag_len = AES_GCM_TAG_SIZE;
 
     FACTORY_LOG("AES-GCM %s | Data: %zu, AAD: %zu\n", is_encrypt ? "ENC" : "DEC", data_len, aad_len);
 
@@ -178,7 +179,7 @@ static TEE_Result DRM_TA_AES_GCM_ENCRY_DECRY(TEE_Param params[4])
         res = TEE_AEEncryptFinal(op,
                                  payload_buf, data_len,
                                  payload_buf, &data_len,
-                                 tag_buf, &aad_len); /* Re-using aad_len as dummy tag_len ptr */
+                                 tag_buf, &tag_len);
     } else {
         /* Decryption using memory isolation for stability */
         size_t out_len = (uint32_t)data_len;

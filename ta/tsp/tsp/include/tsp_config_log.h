@@ -18,17 +18,19 @@
  * to Synaptics.
  */
 
-#ifndef _CONFIG_LOG_H_
-#define _CONFIG_LOG_H_
+#ifndef _TSP_CONFIG_LOG_H_
+#define _TSP_CONFIG_LOG_H_
 
 #define CONFIG_DEBUG
 #define CONFIG_ASSERT
 #define CONFIG_LOG_CPUID
 #define CONFIG_TA_LOG_ENABLE
-// #define CONFIG_ANDROID_LOG
+#define CONFIG_ANDROID_LOG
 #define CONFIG_LOG_FATAL
 #define CONFIG_LOG_ERROR
 // #define CONFIG_LOG_HIGH
+// #define CONFIG_LOG_MED
+// #define CONFIG_LOG_LOW
+// #define CONFIG_LOG_INFO
 
-
-#endif /* _CONFIG_LOG_H_ */
+#endif /* _TSP_CONFIG_LOG_H_ */

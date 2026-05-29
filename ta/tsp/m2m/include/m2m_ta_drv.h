@@ -148,8 +148,8 @@ HRESULT TSP_CryptoInit(void *pCallback, int32_t uFigoId, void *pCmdBaseBuf, UINT
 HRESULT TSP_CryptoDeinit(int32_t uFigoId);
 HRESULT TSP_CryptoAllocFigoTask(int32_t uFigoId);
 HRESULT TSP_CryptoFreeFigoTask(int32_t uFigoId);
-HRESULT TSP_CryptoLoadFw(int32_t *pFigoId);
-HRESULT TSP_CryptoUnLoadFw(int32_t uFigoId);
+HRESULT TSP_CryptoStartFw(int32_t *pFigoId);
+HRESULT TSP_CryptoStopFw(int32_t uFigoId);
 HRESULT TSP_CryptoProcess(M2M_TA_CRYPTO_CMD *pDatChunkCmd, int32_t uFigoId);
 
 #endif

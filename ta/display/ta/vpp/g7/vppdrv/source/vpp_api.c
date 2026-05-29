@@ -9057,3 +9057,84 @@ int MV_VPPOBJ_GetBlockStatus(int handle, ENUM_VPP_BLOCK blkId, int blkIdArg, int
 
     return (MV_VPP_OK);
 }
+
+int MV_VPPOBJ_MipiPanelSendCmd(int handle, UINT8 *pcmd, UINT16 bufsize)
+{
+    VPP_OBJ *vpp_obj;
+    UINT8 *shmVirtAddr;
+    int ret;
+    VPP_SHM_HANDLE shmHandle;
+    VPP_BUFF_HANDLE bufHandle;
+    VPP_SHM_BUFFER_DESC bufDesc;
+    int shmsize;
+
+    if (g_vpp->magic != VPP_MAGIC)
+    {
+        return (MV_VPP_EUNCONFIG);
+    }
+
+    if (handle < 0 || handle >= MAX_NUM_OBJECTS)
+    {
+        return (MV_VPP_EBADPARAM);
+    }
+
+    if (!pcmd || !bufsize)
+    {
+        return (MV_VPP_EBADPARAM);
+    }
+
+    vpp_obj = g_vpp->vpp_objs[handle];
+    if (!vpp_obj) {
+        return (MV_VPP_ENODEV);
+    }
+
+    //memid/phy-addr is passed in shmHandle
+    shmHandle = (VPP_SHM_HANDLE)(ARCH_PTR_TYPE)pcmd;
+    shmsize = VPP_SHM_ALIGN_ROUNDUP(bufsize);
+
+    VPP_INIT_SHM_BUFFER_DESC(bufDesc, (void*)shmHandle, shmsize, VPP_SHM_BUFFER_TYPE_INPUT);
+    VPP_MapAndValidate_SingleBuffer(&bufHandle, &bufDesc);
+
+    //Retrieve the value from VPP_BUFF_HANDLE
+    shmVirtAddr = (void*)bufHandle.virt_addr;
+
+#ifndef VPP_ENABLE_MEMID_BY_VIRT_ADDR
+    //If continue to use physical address, then override virt addr with phy addr
+    shmVirtAddr = (void*)pcmd;
+#endif
+
+    ret = VPP_BE_MIPI_PanelSendCmdBuf(vpp_obj, shmVirtAddr, bufsize);
+
+    VPP_UnMapUnRegister_SingleBuffer(&bufHandle);
+
+    return ret;
+}
+
+#ifdef CONFIG_VPP_ENABLE_DELAY_BY_LOOP
+/*
+ * Poll TEE_GetSystemTime until at least 'ms' milliseconds have elapsed.
+ * TEE_Time resolution is milliseconds, so sub-millisecond delays are
+ * rounded up to 1 ms.
+ */
+static void mdelay(unsigned int ms)
+{
+    TEE_Time t0, t1;
+    uint32_t elapsed_ms;
+
+    if (ms == 0)
+        return;
+
+    TEE_GetSystemTime(&t0);
+    do {
+        TEE_GetSystemTime(&t1);
+        elapsed_ms = (t1.seconds - t0.seconds) * 1000u +
+                     (uint32_t)((int32_t)t1.millis - (int32_t)t0.millis);
+    } while (elapsed_ms < ms);
+}
+
+static void udelay(unsigned int us)
+{
+    /* TEE_Time is ms-granular; round up to at least 1 ms */
+    mdelay(us < 1000u ? 1u : us / 1000u);
+}
+#endif //CONFIG_VPP_ENABLE_DELAY_BY_LOOP

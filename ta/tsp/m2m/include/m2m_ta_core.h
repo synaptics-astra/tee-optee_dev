@@ -40,8 +40,8 @@ HRESULT M2M_TA_Core_Session_Open(TA_M2M_CRYPTO_H hCryptoSrv,
 HRESULT M2M_TA_Core_Session_Close(TA_M2M_SESS_HANDLE hSess);
 HRESULT M2M_TA_Core_AllocFigoTask(UINT32 uFigoId);
 HRESULT M2M_TA_Core_FreeFigoTask(UINT32 uFigoId);
-HRESULT M2M_TA_Core_LoadFw(UINT32 *pFigoId);
-HRESULT M2M_TA_Core_UnloadFw(UINT32 uFigoId);
+HRESULT M2M_TA_Core_StartFw(UINT32 *pFigoId);
+HRESULT M2M_TA_Core_StopFw(UINT32 uFigoId);
 HRESULT M2M_TA_Core_Session_SetScheme(TA_M2M_SESS_HANDLE hSess, M2MCRYPTO_TYPE eScheme);
 #ifndef TA_COMPILE
 HRESULT M2M_TA_Core_Session_Config(TA_M2M_SESS_HANDLE hSess,

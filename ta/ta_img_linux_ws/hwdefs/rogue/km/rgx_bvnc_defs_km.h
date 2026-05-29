@@ -64,132 +64,218 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *****************************************************************************/
 
 #define RGX_FEATURE_AXI_ACELITE_POS                                     (0U)
+#define RGX_FEATURE_AXI_ACELITE_QWORD_BITPOS                            (0U)
+#define RGX_FEATURE_AXI_ACELITE_ARRAY_INDEX                             (0U)
 #define RGX_FEATURE_AXI_ACELITE_BIT_MASK                                (IMG_UINT64_C(0x0000000000000001))
 
 #define RGX_FEATURE_CLUSTER_GROUPING_POS                                (1U)
+#define RGX_FEATURE_CLUSTER_GROUPING_QWORD_BITPOS                       (1U)
+#define RGX_FEATURE_CLUSTER_GROUPING_ARRAY_INDEX                        (0U)
 #define RGX_FEATURE_CLUSTER_GROUPING_BIT_MASK                           (IMG_UINT64_C(0x0000000000000002))
 
 #define RGX_FEATURE_COMPUTE_POS                                         (2U)
+#define RGX_FEATURE_COMPUTE_QWORD_BITPOS                                (2U)
+#define RGX_FEATURE_COMPUTE_ARRAY_INDEX                                 (0U)
 #define RGX_FEATURE_COMPUTE_BIT_MASK                                    (IMG_UINT64_C(0x0000000000000004))
 
 #define RGX_FEATURE_COMPUTE_MORTON_CAPABLE_POS                          (3U)
+#define RGX_FEATURE_COMPUTE_MORTON_CAPABLE_QWORD_BITPOS                 (3U)
+#define RGX_FEATURE_COMPUTE_MORTON_CAPABLE_ARRAY_INDEX                  (0U)
 #define RGX_FEATURE_COMPUTE_MORTON_CAPABLE_BIT_MASK                     (IMG_UINT64_C(0x0000000000000008))
 
 #define RGX_FEATURE_COMPUTE_OVERLAP_POS                                 (4U)
+#define RGX_FEATURE_COMPUTE_OVERLAP_QWORD_BITPOS                        (4U)
+#define RGX_FEATURE_COMPUTE_OVERLAP_ARRAY_INDEX                         (0U)
 #define RGX_FEATURE_COMPUTE_OVERLAP_BIT_MASK                            (IMG_UINT64_C(0x0000000000000010))
 
 #define RGX_FEATURE_COREID_PER_OS_POS                                   (5U)
+#define RGX_FEATURE_COREID_PER_OS_QWORD_BITPOS                          (5U)
+#define RGX_FEATURE_COREID_PER_OS_ARRAY_INDEX                           (0U)
 #define RGX_FEATURE_COREID_PER_OS_BIT_MASK                              (IMG_UINT64_C(0x0000000000000020))
 
 #define RGX_FEATURE_DYNAMIC_DUST_POWER_POS                              (6U)
+#define RGX_FEATURE_DYNAMIC_DUST_POWER_QWORD_BITPOS                     (6U)
+#define RGX_FEATURE_DYNAMIC_DUST_POWER_ARRAY_INDEX                      (0U)
 #define RGX_FEATURE_DYNAMIC_DUST_POWER_BIT_MASK                         (IMG_UINT64_C(0x0000000000000040))
 
 #define RGX_FEATURE_FASTRENDER_DM_POS                                   (7U)
+#define RGX_FEATURE_FASTRENDER_DM_QWORD_BITPOS                          (7U)
+#define RGX_FEATURE_FASTRENDER_DM_ARRAY_INDEX                           (0U)
 #define RGX_FEATURE_FASTRENDER_DM_BIT_MASK                              (IMG_UINT64_C(0x0000000000000080))
 
 #define RGX_FEATURE_GPU_MULTICORE_SUPPORT_POS                           (8U)
+#define RGX_FEATURE_GPU_MULTICORE_SUPPORT_QWORD_BITPOS                  (8U)
+#define RGX_FEATURE_GPU_MULTICORE_SUPPORT_ARRAY_INDEX                   (0U)
 #define RGX_FEATURE_GPU_MULTICORE_SUPPORT_BIT_MASK                      (IMG_UINT64_C(0x0000000000000100))
 
 #define RGX_FEATURE_GPU_VIRTUALISATION_POS                              (9U)
+#define RGX_FEATURE_GPU_VIRTUALISATION_QWORD_BITPOS                     (9U)
+#define RGX_FEATURE_GPU_VIRTUALISATION_ARRAY_INDEX                      (0U)
 #define RGX_FEATURE_GPU_VIRTUALISATION_BIT_MASK                         (IMG_UINT64_C(0x0000000000000200))
 
 #define RGX_FEATURE_GS_RTA_SUPPORT_POS                                  (10U)
+#define RGX_FEATURE_GS_RTA_SUPPORT_QWORD_BITPOS                         (10U)
+#define RGX_FEATURE_GS_RTA_SUPPORT_ARRAY_INDEX                          (0U)
 #define RGX_FEATURE_GS_RTA_SUPPORT_BIT_MASK                             (IMG_UINT64_C(0x0000000000000400))
 
 #define RGX_FEATURE_IRQ_PER_OS_POS                                      (11U)
+#define RGX_FEATURE_IRQ_PER_OS_QWORD_BITPOS                             (11U)
+#define RGX_FEATURE_IRQ_PER_OS_ARRAY_INDEX                              (0U)
 #define RGX_FEATURE_IRQ_PER_OS_BIT_MASK                                 (IMG_UINT64_C(0x0000000000000800))
 
 #define RGX_FEATURE_MIPS_POS                                            (12U)
+#define RGX_FEATURE_MIPS_QWORD_BITPOS                                   (12U)
+#define RGX_FEATURE_MIPS_ARRAY_INDEX                                    (0U)
 #define RGX_FEATURE_MIPS_BIT_MASK                                       (IMG_UINT64_C(0x0000000000001000))
 
 #define RGX_FEATURE_PBE2_IN_XE_POS                                      (13U)
+#define RGX_FEATURE_PBE2_IN_XE_QWORD_BITPOS                             (13U)
+#define RGX_FEATURE_PBE2_IN_XE_ARRAY_INDEX                              (0U)
 #define RGX_FEATURE_PBE2_IN_XE_BIT_MASK                                 (IMG_UINT64_C(0x0000000000002000))
 
 #define RGX_FEATURE_PBE_CHECKSUM_2D_POS                                 (14U)
+#define RGX_FEATURE_PBE_CHECKSUM_2D_QWORD_BITPOS                        (14U)
+#define RGX_FEATURE_PBE_CHECKSUM_2D_ARRAY_INDEX                         (0U)
 #define RGX_FEATURE_PBE_CHECKSUM_2D_BIT_MASK                            (IMG_UINT64_C(0x0000000000004000))
 
 #define RGX_FEATURE_PBVNC_COREID_REG_POS                                (15U)
+#define RGX_FEATURE_PBVNC_COREID_REG_QWORD_BITPOS                       (15U)
+#define RGX_FEATURE_PBVNC_COREID_REG_ARRAY_INDEX                        (0U)
 #define RGX_FEATURE_PBVNC_COREID_REG_BIT_MASK                           (IMG_UINT64_C(0x0000000000008000))
 
 #define RGX_FEATURE_PERFBUS_POS                                         (16U)
+#define RGX_FEATURE_PERFBUS_QWORD_BITPOS                                (16U)
+#define RGX_FEATURE_PERFBUS_ARRAY_INDEX                                 (0U)
 #define RGX_FEATURE_PERFBUS_BIT_MASK                                    (IMG_UINT64_C(0x0000000000010000))
 
 #define RGX_FEATURE_PERF_COUNTER_BATCH_POS                              (17U)
+#define RGX_FEATURE_PERF_COUNTER_BATCH_QWORD_BITPOS                     (17U)
+#define RGX_FEATURE_PERF_COUNTER_BATCH_ARRAY_INDEX                      (0U)
 #define RGX_FEATURE_PERF_COUNTER_BATCH_BIT_MASK                         (IMG_UINT64_C(0x0000000000020000))
 
 #define RGX_FEATURE_PM_MMU_VFP_POS                                      (18U)
+#define RGX_FEATURE_PM_MMU_VFP_QWORD_BITPOS                             (18U)
+#define RGX_FEATURE_PM_MMU_VFP_ARRAY_INDEX                              (0U)
 #define RGX_FEATURE_PM_MMU_VFP_BIT_MASK                                 (IMG_UINT64_C(0x0000000000040000))
 
 #define RGX_FEATURE_RISCV_FW_PROCESSOR_POS                              (19U)
+#define RGX_FEATURE_RISCV_FW_PROCESSOR_QWORD_BITPOS                     (19U)
+#define RGX_FEATURE_RISCV_FW_PROCESSOR_ARRAY_INDEX                      (0U)
 #define RGX_FEATURE_RISCV_FW_PROCESSOR_BIT_MASK                         (IMG_UINT64_C(0x0000000000080000))
 
 #define RGX_FEATURE_ROGUEXE_POS                                         (20U)
+#define RGX_FEATURE_ROGUEXE_QWORD_BITPOS                                (20U)
+#define RGX_FEATURE_ROGUEXE_ARRAY_INDEX                                 (0U)
 #define RGX_FEATURE_ROGUEXE_BIT_MASK                                    (IMG_UINT64_C(0x0000000000100000))
 
 #define RGX_FEATURE_SAFETY_IRQ_POS                                      (21U)
+#define RGX_FEATURE_SAFETY_IRQ_QWORD_BITPOS                             (21U)
+#define RGX_FEATURE_SAFETY_IRQ_ARRAY_INDEX                              (0U)
 #define RGX_FEATURE_SAFETY_IRQ_BIT_MASK                                 (IMG_UINT64_C(0x0000000000200000))
 
 #define RGX_FEATURE_SIMPLE_INTERNAL_PARAMETER_FORMAT_POS                (22U)
+#define RGX_FEATURE_SIMPLE_INTERNAL_PARAMETER_FORMAT_QWORD_BITPOS       (22U)
+#define RGX_FEATURE_SIMPLE_INTERNAL_PARAMETER_FORMAT_ARRAY_INDEX        (0U)
 #define RGX_FEATURE_SIMPLE_INTERNAL_PARAMETER_FORMAT_BIT_MASK           (IMG_UINT64_C(0x0000000000400000))
 
 #define RGX_FEATURE_SIMPLE_INTERNAL_PARAMETER_FORMAT_V1_POS             (23U)
+#define RGX_FEATURE_SIMPLE_INTERNAL_PARAMETER_FORMAT_V1_QWORD_BITPOS    (23U)
+#define RGX_FEATURE_SIMPLE_INTERNAL_PARAMETER_FORMAT_V1_ARRAY_INDEX     (0U)
 #define RGX_FEATURE_SIMPLE_INTERNAL_PARAMETER_FORMAT_V1_BIT_MASK        (IMG_UINT64_C(0x0000000000800000))
 
 #define RGX_FEATURE_SIMPLE_INTERNAL_PARAMETER_FORMAT_V2_POS             (24U)
+#define RGX_FEATURE_SIMPLE_INTERNAL_PARAMETER_FORMAT_V2_QWORD_BITPOS    (24U)
+#define RGX_FEATURE_SIMPLE_INTERNAL_PARAMETER_FORMAT_V2_ARRAY_INDEX     (0U)
 #define RGX_FEATURE_SIMPLE_INTERNAL_PARAMETER_FORMAT_V2_BIT_MASK        (IMG_UINT64_C(0x0000000001000000))
 
 #define RGX_FEATURE_SINGLE_BIF_POS                                      (25U)
+#define RGX_FEATURE_SINGLE_BIF_QWORD_BITPOS                             (25U)
+#define RGX_FEATURE_SINGLE_BIF_ARRAY_INDEX                              (0U)
 #define RGX_FEATURE_SINGLE_BIF_BIT_MASK                                 (IMG_UINT64_C(0x0000000002000000))
 
 #define RGX_FEATURE_SLC_SIZE_CONFIGURABLE_POS                           (26U)
+#define RGX_FEATURE_SLC_SIZE_CONFIGURABLE_QWORD_BITPOS                  (26U)
+#define RGX_FEATURE_SLC_SIZE_CONFIGURABLE_ARRAY_INDEX                   (0U)
 #define RGX_FEATURE_SLC_SIZE_CONFIGURABLE_BIT_MASK                      (IMG_UINT64_C(0x0000000004000000))
 
 #define RGX_FEATURE_SOC_TIMER_POS                                       (27U)
+#define RGX_FEATURE_SOC_TIMER_QWORD_BITPOS                              (27U)
+#define RGX_FEATURE_SOC_TIMER_ARRAY_INDEX                               (0U)
 #define RGX_FEATURE_SOC_TIMER_BIT_MASK                                  (IMG_UINT64_C(0x0000000008000000))
 
 #define RGX_FEATURE_SYS_BUS_SECURE_RESET_POS                            (28U)
+#define RGX_FEATURE_SYS_BUS_SECURE_RESET_QWORD_BITPOS                   (28U)
+#define RGX_FEATURE_SYS_BUS_SECURE_RESET_ARRAY_INDEX                    (0U)
 #define RGX_FEATURE_SYS_BUS_SECURE_RESET_BIT_MASK                       (IMG_UINT64_C(0x0000000010000000))
 
 #define RGX_FEATURE_TDM_PDS_CHECKSUM_POS                                (29U)
+#define RGX_FEATURE_TDM_PDS_CHECKSUM_QWORD_BITPOS                       (29U)
+#define RGX_FEATURE_TDM_PDS_CHECKSUM_ARRAY_INDEX                        (0U)
 #define RGX_FEATURE_TDM_PDS_CHECKSUM_BIT_MASK                           (IMG_UINT64_C(0x0000000020000000))
 
 #define RGX_FEATURE_TFBC_DELTA_CORRELATION_POS                          (30U)
+#define RGX_FEATURE_TFBC_DELTA_CORRELATION_QWORD_BITPOS                 (30U)
+#define RGX_FEATURE_TFBC_DELTA_CORRELATION_ARRAY_INDEX                  (0U)
 #define RGX_FEATURE_TFBC_DELTA_CORRELATION_BIT_MASK                     (IMG_UINT64_C(0x0000000040000000))
 
 #define RGX_FEATURE_TFBC_LOSSY_37_PERCENT_POS                           (31U)
+#define RGX_FEATURE_TFBC_LOSSY_37_PERCENT_QWORD_BITPOS                  (31U)
+#define RGX_FEATURE_TFBC_LOSSY_37_PERCENT_ARRAY_INDEX                   (0U)
 #define RGX_FEATURE_TFBC_LOSSY_37_PERCENT_BIT_MASK                      (IMG_UINT64_C(0x0000000080000000))
 
 #define RGX_FEATURE_TFBC_NATIVE_YUV10_POS                               (32U)
+#define RGX_FEATURE_TFBC_NATIVE_YUV10_QWORD_BITPOS                      (32U)
+#define RGX_FEATURE_TFBC_NATIVE_YUV10_ARRAY_INDEX                       (0U)
 #define RGX_FEATURE_TFBC_NATIVE_YUV10_BIT_MASK                          (IMG_UINT64_C(0x0000000100000000))
 
 #define RGX_FEATURE_TILE_REGION_PROTECTION_POS                          (33U)
+#define RGX_FEATURE_TILE_REGION_PROTECTION_QWORD_BITPOS                 (33U)
+#define RGX_FEATURE_TILE_REGION_PROTECTION_ARRAY_INDEX                  (0U)
 #define RGX_FEATURE_TILE_REGION_PROTECTION_BIT_MASK                     (IMG_UINT64_C(0x0000000200000000))
 
 #define RGX_FEATURE_TLA_POS                                             (34U)
+#define RGX_FEATURE_TLA_QWORD_BITPOS                                    (34U)
+#define RGX_FEATURE_TLA_ARRAY_INDEX                                     (0U)
 #define RGX_FEATURE_TLA_BIT_MASK                                        (IMG_UINT64_C(0x0000000400000000))
 
 #define RGX_FEATURE_TPU_CEM_DATAMASTER_GLOBAL_REGISTERS_POS             (35U)
+#define RGX_FEATURE_TPU_CEM_DATAMASTER_GLOBAL_REGISTERS_QWORD_BITPOS    (35U)
+#define RGX_FEATURE_TPU_CEM_DATAMASTER_GLOBAL_REGISTERS_ARRAY_INDEX     (0U)
 #define RGX_FEATURE_TPU_CEM_DATAMASTER_GLOBAL_REGISTERS_BIT_MASK        (IMG_UINT64_C(0x0000000800000000))
 
 #define RGX_FEATURE_TPU_DM_GLOBAL_REGISTERS_POS                         (36U)
+#define RGX_FEATURE_TPU_DM_GLOBAL_REGISTERS_QWORD_BITPOS                (36U)
+#define RGX_FEATURE_TPU_DM_GLOBAL_REGISTERS_ARRAY_INDEX                 (0U)
 #define RGX_FEATURE_TPU_DM_GLOBAL_REGISTERS_BIT_MASK                    (IMG_UINT64_C(0x0000001000000000))
 
 #define RGX_FEATURE_TPU_FILTERING_MODE_CONTROL_POS                      (37U)
+#define RGX_FEATURE_TPU_FILTERING_MODE_CONTROL_QWORD_BITPOS             (37U)
+#define RGX_FEATURE_TPU_FILTERING_MODE_CONTROL_ARRAY_INDEX              (0U)
 #define RGX_FEATURE_TPU_FILTERING_MODE_CONTROL_BIT_MASK                 (IMG_UINT64_C(0x0000002000000000))
 
 #define RGX_FEATURE_VOLCANIC_TB_POS                                     (38U)
+#define RGX_FEATURE_VOLCANIC_TB_QWORD_BITPOS                            (38U)
+#define RGX_FEATURE_VOLCANIC_TB_ARRAY_INDEX                             (0U)
 #define RGX_FEATURE_VOLCANIC_TB_BIT_MASK                                (IMG_UINT64_C(0x0000004000000000))
 
 #define RGX_FEATURE_WATCHDOG_TIMER_POS                                  (39U)
+#define RGX_FEATURE_WATCHDOG_TIMER_QWORD_BITPOS                         (39U)
+#define RGX_FEATURE_WATCHDOG_TIMER_ARRAY_INDEX                          (0U)
 #define RGX_FEATURE_WATCHDOG_TIMER_BIT_MASK                             (IMG_UINT64_C(0x0000008000000000))
 
 #define RGX_FEATURE_WORKGROUP_PROTECTION_POS                            (40U)
+#define RGX_FEATURE_WORKGROUP_PROTECTION_QWORD_BITPOS                   (40U)
+#define RGX_FEATURE_WORKGROUP_PROTECTION_ARRAY_INDEX                    (0U)
 #define RGX_FEATURE_WORKGROUP_PROTECTION_BIT_MASK                       (IMG_UINT64_C(0x0000010000000000))
 
 #define RGX_FEATURE_XE_MEMORY_HIERARCHY_POS                             (41U)
+#define RGX_FEATURE_XE_MEMORY_HIERARCHY_QWORD_BITPOS                    (41U)
+#define RGX_FEATURE_XE_MEMORY_HIERARCHY_ARRAY_INDEX                     (0U)
 #define RGX_FEATURE_XE_MEMORY_HIERARCHY_BIT_MASK                        (IMG_UINT64_C(0x0000020000000000))
 
 #define RGX_FEATURE_XT_TOP_INFRASTRUCTURE_POS                           (42U)
+#define RGX_FEATURE_XT_TOP_INFRASTRUCTURE_QWORD_BITPOS                  (42U)
+#define RGX_FEATURE_XT_TOP_INFRASTRUCTURE_ARRAY_INDEX                   (0U)
 #define RGX_FEATURE_XT_TOP_INFRASTRUCTURE_BIT_MASK                      (IMG_UINT64_C(0x0000040000000000))
 
 

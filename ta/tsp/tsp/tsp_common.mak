@@ -12,7 +12,7 @@ ifdef CHIP_FULL_NAME
 	$(filter $(CHIP_FULL_NAME), VS680 VS640 platypus dolphin VS640_rdk platypus_rdk dolphin_rdk VS680_rdk))
 
 		ifeq ($(CHIP_FULL_NAME), $(filter $(CHIP_FULL_NAME), VS680 dolphin VS680_rdk dolphin_rdk))
-			B_CHIP_CFLAGS +=-DBERLIN_CHIP_VERSION=BERLIN_VS680
+			B_CHIP_CFLAGS +=-DBERLIN_CHIP_VERSION=BERLIN_VS680_A0
 			CHIP = VS680_A0
 		endif
 
@@ -37,6 +37,13 @@ $(info "CONFIG_GENX_ENABLE is defined")
 B_CHIP_CFLAGS += -DCONFIG_GENX_ENABLE
 else
 $(info "CONFIG_GENX_ENABLE is not defined")
+endif
+
+ifneq ($(BCM_FW_LOAD), y)
+$(info "BCM_FW_LOAD($(BCM_FW_LOAD)) is not defined")
+B_CHIP_CFLAGS += -DTA_FW_LOAD
+else
+$(info "BCM_FW_LOAD($(BCM_FW_LOAD)) is defined")
 endif
 
 TA_CFLAGS += $(B_CHIP_CFLAGS)

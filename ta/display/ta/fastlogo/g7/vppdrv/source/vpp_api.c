@@ -11092,8 +11092,6 @@ int MV_VPPOBJ_SetFormat(int handle, int cpcbID, VPP_DISP_OUT_PARAMS *pDispParams
 
     VPPAPI_DBG_INFO(" handle [%x], cpcb [%d], resID [%d], bit_depth [%d], clr_fmt [%d], pixel_rep [%d]\n", handle, cpcbID, resID, bit_depth, color_fmt, pixel_rept);
 
-    VPP_DEBUG_UTIL_printRegDumpMain(vpp_obj, 4);
-
     if (resID<FIRST_RES || resID>=MAX_NUM_RESS)
         return (MV_VPP_EBADPARAM);
 
@@ -11484,4 +11482,56 @@ int MV_VPPOBJ_GetBlockStatus(int handle, ENUM_VPP_BLOCK blkId, int blkIdArg, int
     }
 
     return (MV_VPP_OK);
+}
+
+int MV_VPPOBJ_MipiPanelSendCmd(int handle, UINT8 *pcmd, UINT16 bufsize)
+{
+    VPP_OBJ *vpp_obj;
+    UINT8 *shmVirtAddr;
+    int ret;
+    VPP_SHM_HANDLE shmHandle;
+    VPP_BUFF_HANDLE bufHandle;
+    VPP_SHM_BUFFER_DESC bufDesc;
+    int shmsize;
+
+    if (g_vpp->magic != VPP_MAGIC)
+    {
+        return (MV_VPP_EUNCONFIG);
+    }
+
+    if (handle < 0 || handle >= MAX_NUM_OBJECTS)
+    {
+        return (MV_VPP_EBADPARAM);
+    }
+
+    if (!pcmd || !bufsize)
+    {
+        return (MV_VPP_EBADPARAM);
+    }
+
+    vpp_obj = g_vpp->vpp_objs[handle];
+    if (!vpp_obj) {
+        return (MV_VPP_ENODEV);
+    }
+
+    //memid/phy-addr is passed in shmHandle
+    shmHandle = (VPP_SHM_HANDLE)(ARCH_PTR_TYPE)pcmd;
+    shmsize = VPP_SHM_ALIGN_ROUNDUP(bufsize);
+
+    VPP_INIT_SHM_BUFFER_DESC(bufDesc, (void*)shmHandle, shmsize, VPP_SHM_BUFFER_TYPE_INPUT);
+    VPP_MapAndValidate_SingleBuffer(&bufHandle, &bufDesc);
+
+    //Retrieve the value from VPP_BUFF_HANDLE
+    shmVirtAddr = (void*)bufHandle.virt_addr;
+
+#ifndef VPP_ENABLE_MEMID_BY_VIRT_ADDR
+    //If continue to use physical address, then override virt addr with phy addr
+    shmVirtAddr = (void*)pcmd;
+#endif
+
+    ret = VPP_BE_MIPI_PanelSendCmdBuf(vpp_obj, shmVirtAddr, bufsize);
+
+    VPP_UnMapUnRegister_SingleBuffer(&bufHandle);
+
+    return ret;
 }

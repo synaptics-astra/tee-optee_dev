@@ -43,7 +43,7 @@
 #include "tsp_cmd.h"
 
 #define LOG_TAG "TSP_TA"
-#include "config_log.h"
+#include "tsp_config_log.h"
 #include "ta_log.h"
 
 #ifdef TZ_3_0
@@ -55,7 +55,7 @@ static uintptr_t tsp_map_addr = 0;
 #define VALIDATE_PHY_BUFFER(phyAddr,size) \
     do{ \
       if(phyAddr == 0 || size == 0 || size >  ((uintptr_t)(-1) - (uintptr_t)(phyAddr))){ \
-           TA_LOGE( "Not valid phy mem, start=0x%lx size=0x%x\n",phyAddr, size); \
+           TA_LOGE( "Not valid phy mem, start=0x%lx size=0x%d\n",(uintptr_t)phyAddr, size); \
            return  TEE_ERROR_BAD_PARAMETERS; \
       } \
     }while(0)
@@ -133,7 +133,7 @@ TEE_Result tspbuf_create_with_pa(TA_TSP_BUFF_T *pTspBuf,
     res = TEE_GetMemid_By_Phys(&pTspBuf->memID, phyAddr, bufSize);
     if (TEE_SUCCESS != res) {
         if(bRegister) {
-            phyStartAddr = phyAddr & (~0xfff);
+            phyStartAddr = (paddr_t)(phyAddr & (~0xfff));
             offset = phyAddr & 0xfff;
             mapSize = ALIGN4K(bufSize + offset);
             res = TEE_Register_Memory(phyStartAddr, mapSize, &pTspBuf->memID);
@@ -171,7 +171,7 @@ TEE_Result tspbuf_create_with_pa(TA_TSP_BUFF_T *pTspBuf,
     }
 
     pTspBuf->phyAddr = (void *)phyAddr;
-    pTspBuf->virAddr = (uint8_t*)virStartAddr + (phyAddr - phyStartAddr);
+    pTspBuf->virAddr = (uint8_t*)virStartAddr + (phyAddr - (uintptr_t)phyStartAddr);
     pTspBuf->uBufSize = bufSize;
     pTspBuf->eMemType = TSP_MEM_PARAM_PHY_ADDR;
     pTspBuf->bRegister = bDoReister;
@@ -292,7 +292,7 @@ TEE_Result tspbuf_create_twobuf_with_pa(uintptr_t phyAddr1, uint32_t bufSize1,
                                                 TA_TSP_BUFF_T *pTspBuf2)
 {
     TEE_Result res = TEE_SUCCESS;
-    uintptr_t  phyStartAddr2;
+    paddr_t  phyStartAddr2;
     size_t  mapSize;
     void  *virStartAddr2;
 
@@ -338,7 +338,7 @@ TEE_Result tspbuf_create_twobuf_with_pa(uintptr_t phyAddr1, uint32_t bufSize1,
         }
 
         pTspBuf2->phyAddr = (void *)(uintptr_t)phyAddr2;
-        pTspBuf2->virAddr = (uint8_t*)virStartAddr2 + (phyAddr2 - phyStartAddr2);
+        pTspBuf2->virAddr = (uint8_t*)virStartAddr2 + (phyAddr2 - (uintptr_t)phyStartAddr2);
         pTspBuf2->uBufSize = bufSize2;
         pTspBuf2->eMemType = TSP_MEM_PARAM_PHY_ADDR;
     }

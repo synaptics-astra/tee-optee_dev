@@ -342,6 +342,7 @@ typedef enum {
     VPP_HDMI_SPECIAL_SINKID,
     VPP_SET_DISP_VOUTPARAMS,
     GET_HDMI_SINKFEATUREMAP,
+    VPP_MIPI_SENDCMD,
 
     VPP_SETHDMIPHY                  = 1016,
     VPP_SETHDRCONFIG                = 1032,
