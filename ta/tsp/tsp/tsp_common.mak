@@ -39,11 +39,4 @@ else
 $(info "CONFIG_GENX_ENABLE is not defined")
 endif
 
-ifneq ($(BCM_FW_LOAD), y)
-$(info "BCM_FW_LOAD($(BCM_FW_LOAD)) is not defined")
-B_CHIP_CFLAGS += -DTA_FW_LOAD
-else
-$(info "BCM_FW_LOAD($(BCM_FW_LOAD)) is defined")
-endif
-
 TA_CFLAGS += $(B_CHIP_CFLAGS)

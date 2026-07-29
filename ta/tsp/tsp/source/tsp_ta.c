@@ -112,38 +112,9 @@ static  bool bInitTsp = false;
 
 #define TSPREG_FIGO0_BASE   RA_TspReg_FigoDtcm
 #define TSPREG_FIGO1_BASE   RA_TspReg_Figo1Dtcm
-#define TSP_HBO_FIFO_ID_MAX (TSP_HBO_FIFO_ID_TSI12_PKT + 1)
-#define TSP_TSI_PORT_MAX    arr_TspDtcmGlobal_TsiBufTable
 
 #define IS_TSP_KERNEL_CMD(cmd) ((cmd >= TSP_KERNEL_CMD_MIN) && (cmd < TSP_KERNEL_CMD_MAX))
 #define CMD_TO_INDEX(cmd) (cmd - TSP_KERNEL_CMD_MIN)
-
-typedef struct {
-    const uint32_t figo_id;
-    const uintptr_t base;    //Physical base address
-    const uint32_t size;    //Region size
-}TSPTA_RegInfo;
-
-typedef struct {
-    bool isCfg;
-    uint32_t figo_id;
-    uint32_t fifo_id;
-    uintptr_t base;
-    uint32_t depth;
-    uint32_t enable;
-    uintptr_t session;
-}TSPTA_HBOCfg;
-
-typedef struct {
-    uint32_t ResetCtrl;
-    uint32_t PortCtrl;
-    uint32_t SyncDetect;
-    uint32_t PacketFormat;
-    uint32_t ErrorDetect;
-    uint32_t PidFilter;
-    uint32_t StcClkDiv;
-    uint32_t FifoSelect;
-}TSPTA_TSICfg;
 
 static uint32_t *TSPTA_SavRes_buf[TSP_MAX_FIGO_NUM] = {NULL, NULL};    /* suspend/resume: save & restore buffer */
 static void *TSPTA_SavRes_va[TSP_MAX_FIGO_NUM] = {NULL, NULL};         /* suspend/resume: save & restore virtual address */
@@ -172,8 +143,8 @@ static uint32_t TSPTA_HBO_FIFO_TSI_list[] = {
     TSP_HBO_FIFO_ID_TSI12_PKT
 };
 
-static TSPTA_HBOCfg TSPTA_HBOConfig[TSP_MAX_FIGO_NUM][TSP_HBO_FIFO_ID_MAX];
-static TSPTA_TSICfg TSPTA_TSIConfig[TSP_TSI_PORT_MAX];
+TSPTA_HBOCfg TSPTA_HBOConfig[TSP_MAX_FIGO_NUM][TSP_HBO_FIFO_ID_MAX] = {0};
+TSPTA_TSICfg TSPTA_TSIConfig[TSP_TSI_PORT_MAX] = {0};
 
 #ifdef CONFIG_ENABLE_DRM
 
@@ -517,7 +488,7 @@ static TEE_Result TSPTA_ConfigHboQueue(void* sessionContext,
     TSPTA_HBOConfig[pTspCtx->FigoId][id].enable = enable;
     TSPTA_HBOConfig[pTspCtx->FigoId][id].fifo_id = id;
     TSPTA_HBOConfig[pTspCtx->FigoId][id].figo_id = pTspCtx->FigoId;
-    TSPTA_HBOConfig[pTspCtx->FigoId][id].session = (uintptr_t)sessionContext;
+    memcpy(&TSPTA_HBOConfig[pTspCtx->FigoId][id].hdl, &(pTspCtx->hdl), sizeof(HDL_hbo));
 
 #ifdef USE_DHUB_LITE_AND_ONE_ITCM
      hbo_lite_queue_cfg(&(pTspCtx->hdl),id,base,depth,enable,NULL);
@@ -1709,11 +1680,9 @@ static TEE_Result TSPTA_SaveHWContext(void* sessionContext,
 
 static TEE_Result TSPTA_RestoreHBOFifoCfg(uint32_t figo_id, uint32_t fifo_id)
 {
-    TEE_TspContext* pTspCtx = (TEE_TspContext*)TSPTA_HBOConfig[figo_id][fifo_id].session;
-
     if(TSPTA_HBOConfig[figo_id][fifo_id].isCfg) {
 #ifdef USE_DHUB_LITE_AND_ONE_ITCM
-        hbo_lite_queue_cfg(&(pTspCtx->hdl),
+        hbo_lite_queue_cfg(&(TSPTA_HBOConfig[figo_id][fifo_id].hdl),
             TSPTA_HBOConfig[figo_id][fifo_id].fifo_id,
             TSPTA_HBOConfig[figo_id][fifo_id].base,
             TSPTA_HBOConfig[figo_id][fifo_id].depth,

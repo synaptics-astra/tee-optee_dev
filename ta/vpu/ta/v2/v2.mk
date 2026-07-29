@@ -1,10 +1,7 @@
-my_path := $(abspath $(lastword $(MAKEFILE_LIST)))
+v2_path := $(abspath $(lastword $(MAKEFILE_LIST)))
 # end without slash
-cur_dir := $(patsubst %/,%,$(dir $(my_path)))
+v2_dir := $(patsubst %/,%,$(dir $(v2_path)))
 
-TA_SRC_FILES += $(wildcard $(cur_dir)/src/*.c) \
-                $(cur_dir)/../common/src/vmeta_log.c \
-                $(cur_dir)/../common/src/vpu_hal_mem.c \
-                $(cur_dir)/../common/src/vpu_obj_mgr.c
+TA_SRC_FILES += $(wildcard $(v2_dir)/src/*.c)
 
-TA_CFLAGS += -I $(cur_dir)/inc
+TA_CFLAGS += -I $(v2_dir)/inc

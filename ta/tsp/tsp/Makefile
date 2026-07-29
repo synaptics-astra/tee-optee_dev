@@ -49,18 +49,17 @@ TA_CFLAGS +=-I./tsp_fw/include/Firmware_Berlin_$(CHIP)
 TA_CFLAGS += -DUSE_DOCC_H
 TA_CFLAGS += -DCONFIG_ENABLE_DRM
 
-ifeq ($(BCM_FW_LOAD), y)
-$(info "BCM_FW_LOAD is defined %s" "$(BCM_FW_LOAD)")
-else
-$(info "BCM_FW_LOAD is not defined %s" "$(BCM_FW_LOAD)")
-TA_CFLAGS += -DTA_FW_LOAD
-endif
-
 ifdef CONFIG_GENX_ENABLE
 $(info "CONFIG_GENX_ENABLE is defined")
 TA_CFLAGS += -DCONFIG_GENX_ENABLE
 else
+# for syna release build GENX_ENBALE is not set
+ifeq ($(SoC_Ver), VS640)
+$(info "CONFIG_GENX_ENABLE is defined by SoC_Ver")
+TA_CFLAGS += -DCONFIG_GENX_ENABLE
+else
 $(info "CONFIG_GENX_ENABLE is not defined")
+endif
 endif
 
 TA_LDFLAGS += -lbridge_drmse

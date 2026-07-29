@@ -37,13 +37,14 @@
 #include <vpu_dbg.h>
 
 #include "vmeta_log.h"
+#include "vpu_ta_common.h"
 
 #define AMP_LOG_HSZ                 256
 
 #ifdef DYNAMIC_LOG_LEVEL
 
 typedef struct {
-    char *name;
+    const char *name;
     unsigned int value;
     unsigned int size;
 } VMETA_LOG_TYPE;
@@ -132,7 +133,7 @@ int wrap_set_level(uint32_t level)
 {
     level_ta = level & 0x7; //the last three bits was used to control TA print
     level_firmware = level; //x111 1111 1111 1111 1VVV
-    TA_LOGL("level_ta=0x%08x level_firmware=0x%08x\n", level_ta, level_firmware);
+    TA_LOGL("level_ta=0x%08" PRIx32 " level_firmware=0x%08" PRIx32 "\n", level_ta, level_firmware);
     return 0;
 }
 
@@ -278,8 +279,10 @@ void vpu_perf_summary(void)
         uint32_t avg_hw    = (uint32_t)(total_hw_cycles/valid_frames);
         uint32_t avg_fw    = (uint32_t)((total_hw_cycles+total_fw_cycles)/valid_frames);
         uint32_t avg_total =(uint32_t)(total_dec_cycles/valid_frames);
-        VMETA_LOGI("@perf>> total %d/%d frames decoded, "
-            "avg_hw_fps: %.2f(0x%08x) avg_fw_fps: %.2f(0x%08x) avg_fps: %2.f(0x%08x)\n",
+        VMETA_LOGI("@perf>> total %" PRIu32 "/%" PRIu32 " frames decoded, "
+            "avg_hw_fps: %.2f(0x%08" PRIx32 ")"
+            "avg_fw_fps: %.2f(0x%08" PRIx32 ")"
+            "avg_fps: %.2f(0x%08" PRIx32 ")\n",
             valid_frames, decoded_frames, vxg_clk/avg_hw, avg_hw,
             vxg_clk/avg_fw, avg_fw, vxg_clk/avg_total, avg_total);
     }

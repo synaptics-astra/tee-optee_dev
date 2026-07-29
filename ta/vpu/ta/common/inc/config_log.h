@@ -22,7 +22,11 @@
 #define __VMETA_CONFIG_H__
 
 #define CONFIG_TA_LOG_ENABLE
-//#define CONFIG_ANDROID_LOG
+
+#ifndef CONFIG_OPTEE
+#define CONFIG_ANDROID_LOG
+#endif
+
 #define CONFIG_LOG_LOW
 
 /* debug and profile log control */

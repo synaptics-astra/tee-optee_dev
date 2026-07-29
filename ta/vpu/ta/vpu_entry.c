@@ -18,25 +18,20 @@
  * to Synaptics.
  */
 
+#include <stdarg.h>
+
 #ifdef CONFIG_OPTEE
 #include "tee_api_syna.h"
 #else // Default TZK
 #include "tee_internal_core_mem_api.h"
 #endif // CONFIG_OPTEE
-
 #include "vmeta_log.h"
 #include "tee_internal_api.h"
 #include "vpu_api.h"
 #include "vpu_obj_mgr.h"
 #include "vpu_ta_common.h"
 
-#ifdef VMETA_V1_EN
-#include "vmeta_v1.h"
-#endif //VMETA_V1_EN
-
-#ifdef VMETA_V2_EN
-#include "vmeta_v2.h"
-#endif //VMETA_V2_EN
+#include "vpu_entry.h"
 
 /*********************** Local types definition Start *************************/
 /*********************** Local types definition End   *************************/
@@ -93,7 +88,7 @@ static TEE_Result vpu_clk_ctrl(void *clk_addr, uint32_t enable)
 static inline int vpu_register_resource(VPU_SESSION_CTX *ctx)
 {
     unsigned int vpu_type = ctx->vpu_type;
-    paddr_t reg_base, gbl_ctrl_base;
+    unsigned int reg_base, gbl_ctrl_base;
     size_t reg_size, gbl_ctrl_size, clk_offset;
     void *reg_base_va, *gbl_ctrl_va;
     TEE_Result ret;
@@ -105,13 +100,13 @@ static inline int vpu_register_resource(VPU_SESSION_CTX *ctx)
      * so map [0xf7ea0000, 0xf7eb0000]
      * shrink size from MEMMAP_CHIP_CTRL_REG_SIZE(0x10000) to 0x1000
      */
-    gbl_ctrl_base = (paddr_t)MEMMAP_CHIP_CTRL_REG_BASE;
+    gbl_ctrl_base = (unsigned int)MEMMAP_CHIP_CTRL_REG_BASE;
     gbl_ctrl_size = (size_t)(MEMMAP_CHIP_CTRL_REG_SIZE >> 4);
-    ret = TEE_Map_Register(gbl_ctrl_base, gbl_ctrl_size, 0, 0, &gbl_ctrl_va);
+    ret = TEE_Map_Register((paddr_t)gbl_ctrl_base, gbl_ctrl_size, 0, 0, &gbl_ctrl_va);
     if (ret)
         return ret;
 
-    ctx->gbl_ctrl_base = gbl_ctrl_va;
+    ctx->gbl_ctrl_va = gbl_ctrl_va;
 
     /**
      * VPU Registers
@@ -120,7 +115,7 @@ static inline int vpu_register_resource(VPU_SESSION_CTX *ctx)
     case VPU_V2G:
         clk_offset = RA_Gbl_decoderClk;
 #ifdef MEMMAP_V4G_REG_BASE
-        reg_base = MEMMAP_V4G_REG_BASE;
+        reg_base = (unsigned int)MEMMAP_V4G_REG_BASE;
         reg_size = MEMMAP_V4G_REG_SIZE;
 #else
         return TEE_ERROR_NOT_SUPPORTED;
@@ -130,7 +125,7 @@ static inline int vpu_register_resource(VPU_SESSION_CTX *ctx)
     case VPU_H1_1:
         clk_offset = RA_Gbl_encoderClk;
 #ifdef MEMMAP_H1_REG_BASE
-        reg_base = MEMMAP_H1_REG_BASE;
+        reg_base = (unsigned int)MEMMAP_H1_REG_BASE;
         reg_size = MEMMAP_H1_REG_SIZE;
 #else
         return TEE_ERROR_NOT_SUPPORTED;
@@ -140,10 +135,9 @@ static inline int vpu_register_resource(VPU_SESSION_CTX *ctx)
     case VPU_G1:
     default:
         return TEE_ERROR_NOT_SUPPORTED;
-        break;
     }
 
-    ret = TEE_Map_Register(reg_base, reg_size, 0, 0, &reg_base_va);
+    ret = TEE_Map_Register((paddr_t)reg_base, reg_size, 0, 0, &reg_base_va);
     if (ret != TEE_SUCCESS)
         return ret;
 
@@ -151,15 +145,15 @@ static inline int vpu_register_resource(VPU_SESSION_CTX *ctx)
     ctx->io_size = reg_size;
     ctx->io_base_phy = reg_base;
 
-    ctx->vpu_clk_ctrl_base = (void *)((uintptr_t)gbl_ctrl_va + clk_offset);
+    ctx->clk_ctrl_va = (void *)((uintptr_t)gbl_ctrl_va + clk_offset);
 
-    TA_LOGI("global %p(v:%p), reg 0x%x(%p), clk %p\n",
-            (void *)(uintptr_t)gbl_ctrl_base, ctx->gbl_ctrl_base,
-            ctx->io_base_phy, ctx->io_base, ctx->vpu_clk_ctrl_base);
+    TA_LOGI("global 0x%x(%p), reg 0x%x(%p), clk %p\n", gbl_ctrl_base,
+            ctx->gbl_ctrl_va, ctx->io_base_phy, ctx->io_base,
+            ctx->clk_ctrl_va);
     /**
      * Enable clock
     */
-    vpu_clk_ctrl(ctx->vpu_clk_ctrl_base, 1);
+    vpu_clk_ctrl(ctx->clk_ctrl_va, 1);
     return 0;
 }
 /*********************** Local function definition End ************************/
@@ -181,31 +175,12 @@ TEE_Result TA_EXPORT TA_CreateEntryPoint(void)
 {
     TEE_Result ret = TEE_SUCCESS;
 
-#ifdef VMETA_V1_EN
-    ret = InitEntryPointV1();
-    if (ret != TEE_SUCCESS)
-        return ret;
-#endif // VMETA_V1_EN
-
-#ifdef VMETA_V2_EN
-    ret = InitEntryPointV2();
-    if (ret != TEE_SUCCESS)
-        return ret;
-#endif // VMETA_V2_EN
-
     return ret;
 }
 
 void TA_EXPORT TA_DestroyEntryPoint(void)
 {
-
-#ifdef VMETA_V1_EN
-    DeinitEntryPointV1();
-#endif // VMETA_V1_EN
-
-#ifdef VMETA_V2_EN
-    DeinitEntryPointV2();
-#endif // VMETA_V2_EN
+    return;
 }
 
 TEE_Result TA_EXPORT TA_OpenSessionEntryPoint(uint32_t parameters_type,
@@ -241,14 +216,10 @@ TEE_Result TA_EXPORT TA_OpenSessionEntryPoint(uint32_t parameters_type,
     // NOTE: currently we have 2 versions, legacy amp ver=1, kernerl ver=2
     if (params[0].value.b == 2) {
         session_ctx->api_ver = 2;
-#ifdef VMETA_V2_EN
         InitSessionV2((void *)session_ctx);
-#endif // VMETA_V2_EN
     } else {
         session_ctx->api_ver = 1;
-#ifdef VMETA_V1_EN
         InitSessionV1((void *)session_ctx);
-#endif // VMETA_V1_EN
     }
 
     *session_id_ptr = (void *)session_ctx;
@@ -265,13 +236,11 @@ void TA_EXPORT TA_CloseSessionEntryPoint(void *session)
     if (!session_ctx)
         return;
 
-#ifdef VMETA_V1_EN
-    DeinitSessionV1(session);
-#endif // VMETA_V1_EN
-
-#ifdef VMETA_V2_EN
-    DeinitSessionV2(session);
-#endif // VMETA_V2_EN
+    if (session_ctx->api_ver == 2) {
+        DeinitSessionV2(session);
+    } else {
+        DeinitSessionV1(session);
+    }
 
     if (session_ctx->objMgr) {
         vpuObjMgrDestroy(session_ctx->objMgr);
@@ -279,7 +248,7 @@ void TA_EXPORT TA_CloseSessionEntryPoint(void *session)
     }
 
     TEE_Unmap_Register(session_ctx->io_base, session_ctx->io_size);
-    TEE_Unmap_Register(session_ctx->gbl_ctrl_base,
+    TEE_Unmap_Register(session_ctx->gbl_ctrl_va,
                        MEMMAP_CHIP_CTRL_REG_SIZE >> 4);
     TEE_Free(session_ctx);
 }
@@ -296,13 +265,9 @@ TEE_Result TA_EXPORT TA_InvokeCommandEntryPoint(void *session,
         return TEE_ERROR_ITEM_NOT_FOUND;
 
     if (session_ctx->api_ver == 2) {
-#ifdef VMETA_V2_EN
         ret = InvokeCommandV2(session_ctx, command_id, parameters_type, params);
-#endif // VMETA_V2_EN
     } else {
-#ifdef VMETA_V1_EN
         ret = InvokeCommandV1(session_ctx, command_id, parameters_type, params);
-#endif // VMETA_V1_EN
     }
 
     return ret;

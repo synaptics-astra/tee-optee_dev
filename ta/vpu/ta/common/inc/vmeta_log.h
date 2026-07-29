@@ -22,6 +22,7 @@
 #ifndef __VPU_LOG_H_
 #define __VPU_LOG_H_
 #include <stdio.h>
+#include <stdint.h>
 
 #include "config_log.h"
 #include "ta_log.h"

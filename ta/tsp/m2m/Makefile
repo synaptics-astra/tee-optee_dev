@@ -42,7 +42,13 @@ ifdef CONFIG_GENX_ENABLE
 $(info "CONFIG_GENX_ENABLE is defined")
 TA_CFLAGS += -DCONFIG_GENX_ENABLE
 else
+# for syna release build GENX_ENBALE is not set
+ifeq ($(SoC_Ver), VS640)
+$(info "CONFIG_GENX_ENABLE is defined by SoC_Ver")
+TA_CFLAGS += -DCONFIG_GENX_ENABLE
+else
 $(info "CONFIG_GENX_ENABLE is not defined")
+endif
 endif
 
 ### must be in the end of file ###

@@ -24,6 +24,7 @@
 
 #include <stdio.h>
 #include <stdint.h>
+#include "vpu_reg_base.h"
 
 typedef struct {
     unsigned int vpu_type;
@@ -33,8 +34,8 @@ typedef struct {
     size_t io_size;
     unsigned int io_base_phy;
 
-    void *gbl_ctrl_base;
-    void *vpu_clk_ctrl_base;
+    void *gbl_ctrl_va;
+    void *clk_ctrl_va;
     /**
      * dict for lookup secure instance context from shm context handle
      * mutable
@@ -44,8 +45,7 @@ typedef struct {
     uint32_t ctx_mem_id;
     void *fw_ctx_vaddr;
     uint8_t enc_plugin_init;
+    void *pRegdlist;
 } VPU_SESSION_CTX;
-
-extern VPU_SESSION_CTX *vpu_cur_session_ctx;
 
 #endif /* __TEE_TA_VPU_COMMON_H__ */

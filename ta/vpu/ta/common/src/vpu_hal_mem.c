@@ -34,8 +34,8 @@
 
 
 ////////////////////////////////////////////////////////////////////////////////
-//! \file vpu_hal_mem.c
-//! \brief Video decoder memory wrapper for non-tee
+//! \file vpu_hal_mem_tee.c
+//! \brief Video decoder memory wrapper for tee
 //!
 //! Purpose:
 //!    provide a set of APIs for memory operation
@@ -43,22 +43,24 @@
 //! Note:
 ////////////////////////////////////////////////////////////////////////////////
 
-#include <string.h>
-#include <stdlib.h>
+#include <sys/types.h>
+#include "tee_internal_api.h"
 #include "vpu_hal_mem.h"
 
 void* vpu_hal_malloc(uint32_t size) {
-    return malloc(size);
+    return TEE_Malloc(size, 0);
 }
 
 void vpu_hal_free(void *p) {
-    free(p);
+    TEE_Free(p);
 }
 
 void * vpu_hal_memset(void *s,  int c, uint32_t n) {
-    return memset(s,c,n);
+    TEE_MemFill(s,c,n);
+    return s;
 }
 
 void * vpu_hal_memmove(void *d,  void *s, uint32_t n) {
-    return memmove(d, s, n);
+    TEE_MemMove(d, s, n);
+    return d;
 }

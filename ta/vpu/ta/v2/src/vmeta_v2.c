@@ -47,8 +47,8 @@
 
 #include <queue.h>
 #include "mem_utils.h"
-#include "vmeta_v2.h"
 #include "vpu_fw_data.h"
+#include "vpu_entry.h"
 
 #ifdef CONFIG_OPTEE
 #include "vpu_plugin.h"
@@ -3013,7 +3013,7 @@ static TEE_Result ta_vpu_clk_ctrl(VPU_SESSION_CTX *session_ctx,
 {
     int ret;
 
-    ret = vpu_clk_ctrl(session_ctx->vpu_clk_ctrl_base, params[0].value.a);
+    ret = vpu_clk_ctrl(session_ctx->clk_ctrl_va, params[0].value.a);
     params[1].value.a = ret;
 
     return TEE_SUCCESS;
@@ -3555,25 +3555,16 @@ static const char *showVmetaCmd(uint32_t cmd) {
     }
 }
 
-TEE_Result InitEntryPointV2(void)
+TEE_Result InitSessionV2(VPU_SESSION_CTX *sessionContext)
 {
     return TEE_SUCCESS;
 }
 
-void DeinitEntryPointV2(void)
+void DeinitSessionV2(VPU_SESSION_CTX *sessionContext)
 {
 }
 
-TEE_Result InitSessionV2(void *sessionContext)
-{
-    return TEE_SUCCESS;
-}
-
-void DeinitSessionV2(void *sessionContext)
-{
-}
-
-TEE_Result InvokeCommandV2(void *session, uint32_t command_id,
+TEE_Result InvokeCommandV2(VPU_SESSION_CTX *session, uint32_t command_id,
                            uint32_t parameters_type,
                            TEE_Param params[4])
 {

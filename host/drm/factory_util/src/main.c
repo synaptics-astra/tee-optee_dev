@@ -190,6 +190,9 @@ typedef enum {
     OTP_BOOT_VERSION,                     // 32 bits (1 x uint32_t)
     OTP_SOC_UID_0,                        // 64 bits = 2 x uint32_t
     OTP_SOC_UID_1,
+    OTP_BOOT_SEGID,                       // 32 bits (1 x uint32_t)
+    OTP_TEE_SEGID,                        // 32 bits (1 x uint32_t)
+    OTP_TEE_SECURITY_ENABLE,              // 1 bit   (1 x uint32_t)
 
     OTP_FIELD_MAX
 } OTP_FIELD_ID;
@@ -224,6 +227,7 @@ static const otp_field_entry_t otp_field_table[] = {
     X(OTP_EMMC_BOOT_DISABLE), X(OTP_SPI_BOOT_DISABLE), X(OTP_DOLBY_AUDIO_DISABLE),
     X(OTP_OEM_AUDIO_CUSTOMER_ID), X(OTP_PRODUCTION_CHIP_FLAG), X(OTP_USB_BOOT_DISABLE),
     X(OTP_BOOT_VERSION), X(OTP_SOC_UID_0), X(OTP_SOC_UID_1),
+    X(OTP_BOOT_SEGID), X(OTP_TEE_SEGID), X(OTP_TEE_SECURITY_ENABLE),
 
     X(OTP_FIELD_MAX)
 #undef X

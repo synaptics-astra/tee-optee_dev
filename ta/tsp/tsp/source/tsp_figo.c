@@ -52,6 +52,8 @@
 static TEE_FigoContext gFigoCtx[TSP_MAX_FIGO_NUM] = {0};
 static void *g_dtcmHeap[TSP_MAX_FIGO_NUM*DTCM_MEM_TYPE_MAX] = {NULL};
 
+extern TSPTA_HBOCfg TSPTA_HBOConfig[TSP_MAX_FIGO_NUM][TSP_HBO_FIFO_ID_MAX];
+
 static inline void write_fw_32(void *addr, uint32_t value)
 {
     *((volatile uint32_t *)addr) = value;
@@ -419,6 +421,14 @@ static void internal_tsp_configHboFifo(TEE_FigoContext *pCtx,
     hbo_queue_clear_done(&(pCtx->hdl), uFifoId);
     hbo_queue_cfg(&(pCtx->hdl), uFifoId, uDtcmBase, uDataCnt, uIsEnable, NULL);
 #endif
+
+    TSPTA_HBOConfig[pCtx->uFigoId][uFifoId].isCfg = true;
+    TSPTA_HBOConfig[pCtx->uFigoId][uFifoId].base = uDtcmBase;
+    TSPTA_HBOConfig[pCtx->uFigoId][uFifoId].depth = uDataCnt;
+    TSPTA_HBOConfig[pCtx->uFigoId][uFifoId].enable = 1;
+    TSPTA_HBOConfig[pCtx->uFigoId][uFifoId].fifo_id = uFifoId;
+    TSPTA_HBOConfig[pCtx->uFigoId][uFifoId].figo_id = pCtx->uFigoId;
+    memcpy(&TSPTA_HBOConfig[pCtx->uFigoId][uFifoId].hdl, &(pCtx->hdl), sizeof(HDL_hbo));
 }
 
 static void internal_tsp_configDS(TEE_FigoContext *pCtx,
