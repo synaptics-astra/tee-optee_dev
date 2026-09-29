@@ -479,7 +479,7 @@ void VPP_Early_Update_CurrentFrame(VPP_OBJ *vpp_obj, int chanID, void *frame)
 #if !defined(VPP_IN_TRUST_ZONE)
         VPP_SHM_CleanCache (plane->vbi_cfgq_shm_handle,0,32);
 #else
-        TEE_FlushCache(plane->vpp_last_frame_addrY, 8);
+        TEE_FlushCache((char*)plane->vpp_last_frame_addrY, 8);
 #endif
     }
     if(plane->vpp_last_frame_addrUV != NULL)
@@ -490,7 +490,7 @@ void VPP_Early_Update_CurrentFrame(VPP_OBJ *vpp_obj, int chanID, void *frame)
 #if !defined(VPP_IN_TRUST_ZONE)
         VPP_SHM_CleanCache (plane->vbi_cfgq_shm_handle,0,32);
 #else
-        TEE_FlushCache(plane->vpp_last_frame_addrUV, 8);
+        TEE_FlushCache((char*)plane->vpp_last_frame_addrUV, 8);
 #endif
     }
 }

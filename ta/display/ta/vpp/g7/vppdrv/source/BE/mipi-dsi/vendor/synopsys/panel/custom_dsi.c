@@ -52,6 +52,10 @@ int Panel_SendCmdBuf(struct mipi_dsi_dev *dev, UINT8 *pcmd, UINT16 bufsize)
 {
     int i = 0, retval = MV_VPP_OK;
 
+    /* Bigger DCS commands need more tx time(expecially non-burst mode)
+     * to be sent in video mode.
+     * Ensure command are sent during command mode only to avoid failure
+     */
     mipi_dsih_cmd_mode(dev, 1);
 
     while (i < bufsize)
@@ -110,7 +114,13 @@ int Panel_SendCmdBuf(struct mipi_dsi_dev *dev, UINT8 *pcmd, UINT16 bufsize)
         if (MV_VPP_OK != retval)
             break;
     }
+
     mipi_dsih_cmd_mode(dev, 0);
+    /* Reset the DSI controller to avoid unexpected behavioral
+     * issues after switching video mode to command mode while
+     * normal opration(xfer of video data) is going on.
+     */
+    mipi_dsih_reset_controller(dev);
 
     return retval;
 }

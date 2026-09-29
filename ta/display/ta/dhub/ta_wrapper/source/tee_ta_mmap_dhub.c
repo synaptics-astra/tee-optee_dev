@@ -12,10 +12,10 @@
 #include "tee_ta_mmap_helper.h"
 #include "dhub_module.h"
 
-TEE_Result TEE_TA_Register_RegRegion(void *phy_addr, UINT32 size, UINT32 opt1, UINT32 opt2, void **va) {
+TEE_Result TEE_TA_Register_RegRegion(paddr_t phy_addr, UINT32 size, UINT32 opt1, UINT32 opt2, void **va) {
         return TEE_TA_Register_RegRegion_Local(phy_addr, size, opt1, opt2, va, &dhub_obj.dhubRegRegion);
 }
 
-void* TEE_TA_RegPhyToVirt(UINT32 phy_addr) {
+void* TEE_TA_RegPhyToVirt(paddr_t phy_addr) {
         return TEE_TA_RegPhyToVirt_Local(phy_addr, &dhub_obj.dhubRegRegion);
 }

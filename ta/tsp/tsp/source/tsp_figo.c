@@ -263,8 +263,9 @@ static TEE_Result internal_tsp_ConfigDSStreamOutModule(TEE_FigoContext *pCtx)
     return TEE_SUCCESS;
 }
 
-#define ION_ATTR_CHECK_MASK       (ION_A_CO | ION_A_CG | ION_A_CV | ION_A_CC)
+#define ION_ATTR_CHECK_MASK       (ION_A_CO | ION_A_CG | ION_A_CV | ION_A_CC | ION_A_CH)
 #define ION_ATTR_CHECK_GFX_ONLY   (ION_A_CG)
+#define ION_ATTR_CHECK_HW_ONLY   (ION_A_CH)
 static TEE_Result internal_ConfigMemzoneInfo(TEE_FigoContext *pCtx)
 {
     uint32_t regIdx = 0;
@@ -318,6 +319,7 @@ static TEE_Result internal_ConfigMemzoneInfo(TEE_FigoContext *pCtx)
         }
         if(TEE_MR_USER(mr) == TEE_MR_USER_ION &&
         (TEE_MR_ION_ATTRIB(mr) & ION_ATTR_CHECK_MASK) != ION_ATTR_CHECK_GFX_ONLY &&
+        (TEE_MR_ION_ATTRIB(mr) & ION_ATTR_CHECK_MASK) != ION_ATTR_CHECK_HW_ONLY &&
         TEE_MR_ION_FOR_SECURE(mr)) {
             if(ion_first_securepool_base > mr->base) {
                 ion_first_securepool_base = mr->base;

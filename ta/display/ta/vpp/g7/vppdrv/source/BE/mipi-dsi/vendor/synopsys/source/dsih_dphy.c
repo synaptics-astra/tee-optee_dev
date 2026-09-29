@@ -38,7 +38,7 @@
  */
 int mipi_dsih_dphy_open(struct mipi_dsi_dev *dev)
 {
-    if (&(dev->phy) == NULL)
+    if (dev == NULL)
         return MIPI_RET(ENODEV);
 
     mipi_dsih_dphy_reset(dev, 0);

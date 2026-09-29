@@ -34,11 +34,12 @@
 
 #ifdef CONFIG_OPTEE
 typedef void * DRM_TEE_SHM_HANDLE;
+#define INVALID_SHM_HANDLE          ((DRM_TEE_SHM_HANDLE)NULL)
 #else
 typedef uint32_t DRM_TEE_SHM_HANDLE;
+#define INVALID_SHM_HANDLE          ((uint32_t )NULL)
 #endif
 
-#define INVALID_SHM_HANDLE          ((uint32_t )NULL)
 #define IS_VALID_SHM_HANDLE(h)      (h != INVALID_SHM_HANDLE)
 
 #define DRM_TEE_SHM_InvalidateCache TEE_InvalidateCache

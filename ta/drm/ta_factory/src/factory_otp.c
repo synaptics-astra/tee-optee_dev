@@ -156,7 +156,7 @@ static HRESULT MV_DRMLIB_OTP_BurnLayout(UINT8 *pbLayout, UINT32 uLayoutLen)
         return lRes;
     }
     memset(pbRespSHM, 0, sizeof(otp_srv_resp));
-    ret = TEE_FlushCache(pbRespSHM, sizeof(otp_srv_resp));
+    ret = TEE_FlushCache((char *)pbRespSHM, sizeof(otp_srv_resp));
     if (TEE_SUCCESS != ret)
     {
         FACTORY_ERR("Failed to flush cache\n");

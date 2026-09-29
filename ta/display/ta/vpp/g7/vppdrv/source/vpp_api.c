@@ -326,6 +326,8 @@ static int MV_VPP_GetCPCBTGStatus(VPP_OBJ *vpp_obj, int CpcbId, int *status)
     GA_REG_WORD32_READ(uiTgRegAddr, &stTgTotal.u32);
     if (VPP_CPCB_RESET_COND(stTgTotal.uTotal_horizontal, stTgTotal.uTotal_vertical)){
         *status = STATUS_INACTIVE;
+    } else {
+        *status = STATUS_ACTIVE;
     }
 
     return MV_VPP_OK;

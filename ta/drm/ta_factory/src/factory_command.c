@@ -143,7 +143,11 @@ static TEE_Result DRM_TA_AES_GCM_ENCRY_DECRY(TEE_Param params[4])
     TEE_Param key_gen_params[4];
     uint8_t secure_key_buf[16] = {0};
     memset(key_gen_params, 0, sizeof(key_gen_params));
+#ifdef CONFIG_OPTEE
+    key_gen_params[1].memref.buffer = secure_key_buf;
+#else
     key_gen_params[1].memref.buffer = (uint32_t)secure_key_buf;
+#endif
     key_gen_params[1].memref.size = sizeof(secure_key_buf);
 
     res = Drm_GenerateSecureKey_V2(key_gen_params);
@@ -176,13 +180,24 @@ static TEE_Result DRM_TA_AES_GCM_ENCRY_DECRY(TEE_Param params[4])
     /* 4. Execute Processing */
     if (is_encrypt) {
         /* Encryption using in-place processing */
+#ifdef CONFIG_OPTEE
+        res = TEE_AEEncryptFinal(op,
+                                 payload_buf, data_len,
+                                 payload_buf, (uint32_t *)&data_len,
+                                 tag_buf, (uint32_t *)&tag_len);
+#else
         res = TEE_AEEncryptFinal(op,
                                  payload_buf, data_len,
                                  payload_buf, &data_len,
                                  tag_buf, &tag_len);
+#endif
     } else {
         /* Decryption using memory isolation for stability */
-        size_t out_len = (uint32_t)data_len;
+#ifdef CONFIG_OPTEE
+        uint32_t out_len = (uint32_t)data_len;
+#else
+        size_t out_len = data_len;
+#endif
         uint8_t *tmp_plain = TEE_Malloc(data_len, 0);
         uint8_t *tmp_tag = TEE_Malloc(AES_GCM_TAG_SIZE, 0);
 
@@ -246,7 +261,7 @@ static TEE_Result DRM_TA_ACCESS_SECURE_SRAM(uint32_t param_types, TEE_Param para
         *pbSHMBuf = valToWrite;
 
         // Flush cache to ensure BCM hardware reads the updated data from physical RAM
-        if (TEE_SUCCESS != TEE_FlushCache(pbSHMBuf, size)) {
+        if (TEE_SUCCESS != TEE_FlushCache((char *)pbSHMBuf, size)) {
             FACTORY_ERR("Failed to flush cache\n");
             result = E_FAIL;
             goto Func_Ret;
@@ -260,7 +275,7 @@ static TEE_Result DRM_TA_ACCESS_SECURE_SRAM(uint32_t param_types, TEE_Param para
     } else {
         /* READ */
         memset(pbSHMBuf, 0, size);
-        if (TEE_SUCCESS != TEE_FlushCache(pbSHMBuf, size)) {
+        if (TEE_SUCCESS != TEE_FlushCache((char *)pbSHMBuf, size)) {
             FACTORY_ERR("Failed to flush cache\n");
             result = E_FAIL;
             goto Func_Ret;
@@ -274,7 +289,7 @@ static TEE_Result DRM_TA_ACCESS_SECURE_SRAM(uint32_t param_types, TEE_Param para
         }
 
         // Invalidate cache to ensure CPU reads the fresh data written by BCM hardware
-        if (TEE_InvalidateCache(pbSHMBuf, size) != TEE_SUCCESS) {
+        if (TEE_InvalidateCache((char *)pbSHMBuf, size) != TEE_SUCCESS) {
             FACTORY_ERR("Failed to invalidate cache\n");
             result = TEE_ERROR_GENERIC;
             goto Func_Ret;

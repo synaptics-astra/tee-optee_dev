@@ -24,7 +24,7 @@
 #include "tee_api_syna.h"
 #endif
 
-TEE_Result TEE_TA_Register_RegRegion_Local(void *phy_addr, UINT32 size, UINT32 opt1, UINT32 opt2, void **va, TEE_TA_REG_REGION *regRegion)
+TEE_Result TEE_TA_Register_RegRegion_Local(paddr_t phy_addr, UINT32 size, UINT32 opt1, UINT32 opt2, void **va, TEE_TA_REG_REGION *regRegion)
 {
     TEE_Result result = TEE_SUCCESS;
     void *virt_addr;
@@ -43,8 +43,8 @@ TEE_Result TEE_TA_Register_RegRegion_Local(void *phy_addr, UINT32 size, UINT32 o
     }
 
     if (result == TEE_SUCCESS) {
-        regRegion->regRegion[regionNdx].phy_addr = (UINT32)phy_addr;
-        regRegion->regRegion[regionNdx].phy_addr_end = ((UINT32)phy_addr) + size;
+        regRegion->regRegion[regionNdx].phy_addr = phy_addr;
+        regRegion->regRegion[regionNdx].phy_addr_end = phy_addr + size;
         regRegion->regRegion[regionNdx].size = size;
         regRegion->regRegion[regionNdx].virt_addr = virt_addr;
         regRegion->RegRegionCnt++;
@@ -54,15 +54,15 @@ TEE_Result TEE_TA_Register_RegRegion_Local(void *phy_addr, UINT32 size, UINT32 o
     return result;
 }
 
-void* TEE_TA_RegPhyToVirt_Local(UINT32 phy_addr, TEE_TA_REG_REGION *regRegion)
+void* TEE_TA_RegPhyToVirt_Local(paddr_t phy_addr, TEE_TA_REG_REGION *regRegion)
 {
     void *virt_addr = NULL;
 
 #ifdef CONFIG_OPTEE
-    for (int i = 0; i < regRegion->RegRegionCnt; i++) {
+    for (unsigned int i = 0; i < regRegion->RegRegionCnt; i++) {
         if (phy_addr >= regRegion->regRegion[i].phy_addr &&
             phy_addr < regRegion->regRegion[i].phy_addr_end) {
-            virt_addr = regRegion->regRegion[i].virt_addr +
+            virt_addr = (char *)regRegion->regRegion[i].virt_addr +
                         (phy_addr - regRegion->regRegion[i].phy_addr);
         }
     }

@@ -318,7 +318,10 @@ static int MV_VPP_GetCPCBTGStatus(VPP_OBJ *vpp_obj, int CpcbId, int *status)
     GA_REG_WORD32_READ(uiTgRegAddr, &stTgTotal.u32);
     if (VPP_CPCB_RESET_COND(stTgTotal.uTotal_horizontal, stTgTotal.uTotal_vertical)){
         *status = STATUS_INACTIVE;
+    } else {
+        *status = STATUS_ACTIVE;
     }
+
 
     return MV_VPP_OK;
 }
@@ -10967,7 +10970,7 @@ INT MV_VPPOBJ_SetGmMode(INT handle, VPP_VOP_TYPE vopID, ENUM_GAMMA_MODE GmMode, 
                                                                 UINT32 u32GammaPhyAddr)
 {
     CMD_BEGIN(2);
-    UINT32 AllocAddr=0;
+    uintptr_t AllocAddr=0;
 
     VPPAPI_DBG_INFO("GAMMA vopID [%d], GmMode [%d] \n",  vopID, GmMode);
 

@@ -30,8 +30,8 @@
 
 #include "com_type.h"
 
-TEE_Result TEE_TA_Register_RegRegion_Local(void *phy_addr, UINT32 size, UINT32 opt1, UINT32 opt2, void **va, TEE_TA_REG_REGION *regRegion);
-void* TEE_TA_RegPhyToVirt_Local(UINT32 phy_addr, TEE_TA_REG_REGION *regRegion);
+TEE_Result TEE_TA_Register_RegRegion_Local(paddr_t phy_addr, UINT32 size, UINT32 opt1, UINT32 opt2, void **va, TEE_TA_REG_REGION *regRegion);
+void* TEE_TA_RegPhyToVirt_Local(paddr_t phy_addr, TEE_TA_REG_REGION *regRegion);
 
 
 #endif //_TEE_TA_MMAP_HELPER_H_

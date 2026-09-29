@@ -45,7 +45,6 @@
 #include <vmeta_log.h>
 #include <vpu_ta_common.h>
 
-#include <queue.h>
 #include "mem_utils.h"
 #include "vpu_fw_data.h"
 #include "vpu_entry.h"
@@ -96,7 +95,6 @@
 #define VPU_CMD_HANDER_TRACE(...)
 #endif
 
-QUEUE(fifo_p, uintptr_t, 32)
 /***************************** debug feature macro region BEGIN **********************************/
 // enable secure buffer checking for TZ 4.0
 #define MAX_PARAM       (4U)
@@ -186,13 +184,6 @@ struct i_vpu_ctx {
     unsigned int codec_fmt;
     /* decoder output format and encoder input format */
     unsigned int fw_pixel_mode;
-    /* For timestamp */
-    struct queue_fifo_p src_bufs;
-    /**
-     * display bufs for decoder timestamp
-     * NOTE: AV1 won't use this
-     */
-    struct queue_fifo_p sink_bufs;
 
     /* v4g decoder mtr buf based */
     struct syna_tz_generic_buf mtr_buf;
@@ -211,6 +202,7 @@ struct i_vpu_ctx {
     i_venc_head_mgr_t header_mgr;
     bool vp8_enc;
     bool meta_mv_en;
+    int event_id;
 };
 
 typedef struct __MV_Info_t {
@@ -418,6 +410,13 @@ static void get_motion_vector(struct syna_vpu_ctrl *ctrl, uint32_t idx,
     VMETA_LOGD("get motion vector done (%d * %d) = %d bytes\n", mbPerFrame,
             mv_size, mbPerFrame * mv_size);
     return;
+}
+
+static inline bool is_critical_event(int event_id)
+{
+    return (event_id == VDEC_EVENT_START_OF_SEQUENCE ||
+            event_id == VDEC_EVENT_ALLOC_DIS_BUF ||
+            event_id == VDEC_EVENT_ALLOC_REF_BUF);
 }
 /*
  * validate the security rules of a syna_vpu_tz_buf
@@ -998,6 +997,8 @@ static int vdec_push_es_buf(struct i_vpu_ctx *ctx, struct syna_vpu_ctrl *ctrl,
         input_desc->addr_virtual = (void *)(bs_buf->buf.vaddr + offset);
         input_desc->size = bytesused - offset;
         input_desc->id = idx;
+        input_desc->pts_high = (uint32_t)(buf->timestamp >> 32);
+        input_desc->pts_low = (uint32_t) (buf->timestamp & 0xFFFFFFFF);
         TEE_InvalidateCache(input_desc->addr_virtual, input_desc->size);
     }
 
@@ -1075,14 +1076,6 @@ static int vdec_push_disp_buf(struct i_vpu_ctx *ctx,
 
     /* TODO: doesn't work for VPx codec, which has ref-only buffer */
     buf->timestamp = 0;
-
-    if (ctx->codec_fmt == SYNA_VXG_AV1)
-        return 0;
-
-    /* NOTE: AV1 won't reach here */
-    uintptr_t tmp_ptr = (uintptr_t)buf;
-    if (queue_fifo_p_push(&ctx->sink_bufs, &tmp_ptr))
-        return TEE_ERROR_OVERFLOW;
 
     return 0;
 }
@@ -1201,27 +1194,6 @@ bail:
     return ret;
 }
 
-static int vdec_tag_tu_output_timestamp(struct i_vpu_ctx *ctx,
-                                        struct syna_vpu_tz_buf *dst_buf)
-{
-    struct syna_vpu_tz_buf *src_buf;
-    uintptr_t tmp_ptr = 0;
-    int ret = 0;
-
-    if (queue_fifo_p_count(&ctx->src_bufs)) {
-        queue_fifo_p_pop(&ctx->src_bufs, &tmp_ptr);
-        if (tmp_ptr) {
-            src_buf = (struct syna_vpu_tz_buf *)tmp_ptr;
-            dst_buf->timestamp = src_buf->timestamp;
-        }
-    } else {
-        VMETA_LOGE("missing src buf for timestamp here");
-        ret = TEE_ERROR_SHORT_BUFFER;
-    }
-
-    return ret;
-}
-
 /* From recycle_dis_buf */
 static int vdec_parse_pic_desc(struct i_vpu_ctx *ctx,
                                struct syna_vpu_tz_buf *buf,
@@ -1312,9 +1284,7 @@ static int vdec_parse_pic_desc(struct i_vpu_ctx *ctx,
     buf->starty = pic_desc->dis_top;
     buf->width = MIN(pic_desc->dis_width, pic_desc->valid_dis_width);
     buf->height = MIN(pic_desc->dis_height, pic_desc->valid_dis_height);
-
-    if (ctx->codec_fmt == SYNA_VXG_AV1)
-        return vdec_tag_tu_output_timestamp(ctx, buf);
+    buf->timestamp = (pic_desc->pts_low) | (((uint64_t) pic_desc->pts_high) << 32);
 
     return 0;
 }
@@ -1567,72 +1537,14 @@ static int vdec_update_seq(struct syna_vpu_ctrl *ctrl,
     return 0;
 }
 
-static int vdec_tag_output_timestamp(struct i_vpu_ctx *ctx,
-                                     vdec_pic_desc_t *pic_desc)
-{
-    struct syna_vpu_tz_buf *dst_buf;
-    struct syna_vpu_tz_buf *src_buf;
-    bool decoded_frame;
-    int ret = 0;
-
-    switch (ctx->codec_fmt) {
-    case SYNA_VXG_VP8:
-    case SYNA_VXG_VP9:
-        if (pic_desc->pic_type == 'r')
-            decoded_frame = false;
-        else
-            decoded_frame = true;
-        break;
-    case SYNA_VXG_AV1:
-        /* AV1 would always show a frame in a temporal unit */
-        return 0;
-        break;
-    default:
-        decoded_frame = true;
-    }
-
-    /* We don't tag timestamp to those ref only(non-display) frame */
-    if (decoded_frame) {
-        if (queue_fifo_p_count(&ctx->src_bufs)) {
-            uintptr_t tmp_ptr = 0;
-            if (!queue_fifo_p_pop(&ctx->sink_bufs, &tmp_ptr)) {
-                dst_buf = (struct syna_vpu_tz_buf *)tmp_ptr;
-                tmp_ptr = 0;
-                queue_fifo_p_pop(&ctx->src_bufs, &tmp_ptr);
-                if (tmp_ptr) {
-                    src_buf = (struct syna_vpu_tz_buf *)tmp_ptr;
-                    dst_buf->timestamp = src_buf->timestamp;
-                }
-                /**
-                 * TODO: tag timestamp with the rest of src bufs which
-                 * are consisted of this dst buf. Firmware didn't support
-                 * slice, field nor tile(coded term in H.265) output.
-                 */
-            } else {
-                VMETA_LOGE("display timestamp FIFO is empty, instance is in a bad state");
-            }
-        } else {
-            VMETA_LOGE("missing src buf for timestamp here");
-            ret = TEE_ERROR_SHORT_BUFFER;
-        }
-    } else {
-        VMETA_LOGE("non display frame");
-    }
-
-    return ret;
-}
-
 static TEE_Result ta_vdec_decode_stream(VPU_SESSION_CTX * session_ctx,
         uint32_t parameters_type, TEE_Param params[4])
 {
     struct syna_vpu_ctrl *ctrl;
     struct i_vpu_ctx *ctx;
     vdec_strm_status_t *fw_status = NULL;
-    struct syna_vpu_tz_buf *src_buf;
-    vdec_strm_buf_desc_t *src_buf_desc = NULL;
     struct idx_queue *q;
     bool loop = true;
-    bool regular_check_display = false;
     int ret;
     unsigned int i;
 
@@ -1761,25 +1673,6 @@ static TEE_Result ta_vdec_decode_stream(VPU_SESSION_CTX * session_ctx,
             }
             break;
         case VDEC_EVENT_START_OF_PICTURE:
-            /**
-             * NOTE: amp does timestamp here, the start of a a field or
-             * frame(progressive).
-             */
-            src_buf_desc = fw_status->sbuf_desc;
-            if (src_buf_desc) {
-                i_vdec_pool_t *pool = (i_vdec_pool_t *)ctx->desc_pool;
-
-                if ((void *)src_buf_desc < (void *)&pool->strm_desc[0]
-                    || (void *)src_buf_desc > (void *)&pool->strm_desc[MAX_SLOT - 1])
-                    break;
-
-                i = src_buf_desc->id;
-                src_buf = &(ctrl->inbufs[i]);
-                uintptr_t tmp_ptr = (uintptr_t)src_buf;
-                queue_fifo_p_push(&ctx->src_bufs, &tmp_ptr);
-            } else {
-                VMETA_LOGE("@err start of pic no src");
-            }
             if (ctrl->rbuf.pop || ctrl->dbuf.pop)
             {
                 ctrl->status.flags |= BERLIN_VPU_STATUS_POP_BREAK;
@@ -1818,11 +1711,6 @@ static TEE_Result ta_vdec_decode_stream(VPU_SESSION_CTX * session_ctx,
             /* TODO: SEI data */
             break;
         case VDEC_EVENT_END_OF_PICTURE:
-            src_buf_desc = fw_status->sbuf_desc;
-            if (!src_buf_desc)
-                VMETA_LOGD("src buf could be incomplete");
-
-            regular_check_display = true;
             break;
         case VDEC_EVENT_CHECK_STR_BUF:
             ret = vdec_loop_pop_es_buf(ctrl, ctx);
@@ -1843,28 +1731,12 @@ static TEE_Result ta_vdec_decode_stream(VPU_SESSION_CTX * session_ctx,
             if (ret) {
                 ctrl->status.flags |= BERLIN_VPU_STATUS_ERROR;
                 loop = false;
-            } else if (!regular_check_display) {
-                /**
-                 * NOTE: this usually happens before START_OF_SEQUENCE event,
-                 * from new FW (svn34130_20230217), it would always pop
-                 * all ref & disp bufs before START_OF_SEQUENCE. We could
-                 * clear the timestamp queue here.
-                 */
-                queue_fifo_p_init(&ctx->sink_bufs);
             }
             break;
         case VDEC_EVENT_END_OF_FRAME:
-            if (!fw_status->pic_desc) {
-                VMETA_LOGE("no pic desc");
-                ret = TEE_ERROR_CORRUPT_OBJECT;
-                goto bail;
-            }
-            ret = vdec_tag_output_timestamp(ctx, fw_status->pic_desc);
             ctrl->status.flags |= BERLIN_VPU_STATUS_DONE;
             break;
         case VDEC_EVENT_START_OF_FRAME:
-            queue_fifo_p_init(&ctx->src_bufs);
-            regular_check_display = true;
             break;
         case VDEC_EVENT_END_OF_STREAM:
             ctrl->status.flags |= BERLIN_VPU_STATUS_DONE;
@@ -1884,6 +1756,7 @@ static TEE_Result ta_vdec_decode_stream(VPU_SESSION_CTX * session_ctx,
 bail:
     params[1].value.a = ret;
     params[1].value.b = fw_status->event_id;
+    ctx->event_id = fw_status->event_id;
     return TEE_SUCCESS;
 }
 
@@ -1918,8 +1791,6 @@ static TEE_Result ta_vdec_drain_pool(VPU_SESSION_CTX * session_ctx,
                        ret, ctrl->sbuf.pop);
             goto bail;
         }
-
-        queue_fifo_p_init(&ctx->sink_bufs);
 
         ret = vdec_loop_pop_ref_buf(ctrl, ctx);
         if (ret != (int)TEE_ERROR_NO_DATA && ret) {
@@ -2051,7 +1922,6 @@ static TEE_Result ta_vdec_reset_instance(VPU_SESSION_CTX * session_ctx,
                    ret, ctrl->dbuf.pop);
         goto failed;
     }
-    queue_fifo_p_init(&ctx->sink_bufs);
 
     ret = vpu_tzmem_put(&ctx->mtr_buf);
 
@@ -2078,6 +1948,9 @@ static TEE_Result ta_vdec_stream_switch_in(VPU_SESSION_CTX *session_ctx,
     }
 
     ret = vdec_stream_switch_in(ctx->strm_ctx);
+    if (is_critical_event(ctx->event_id)) {
+        vdec_load_context(ctx->strm_ctx, 0);
+    }
 
 bail:
     params[1].value.a = ret;
@@ -2101,6 +1974,9 @@ static TEE_Result ta_vdec_stream_switch_out(VPU_SESSION_CTX * session_ctx,
         goto bail;
     }
 
+    if (is_critical_event(ctx->event_id)) {
+        vdec_save_context(ctx->strm_ctx, 0);
+    }
     ret = vdec_stream_switch_out(ctx->strm_ctx);
 bail:
     params[1].value.a = ret;
@@ -2132,11 +2008,14 @@ static TEE_Result ta_vpu_ctx_switch_inst(VPU_SESSION_CTX * session_ctx,
         }
         strm_ctx = ctx->strm_ctx;
 
-        if (ctx->is_encoder)
+        if (ctx->is_encoder) {
             ret = venc_stream_switch_out(strm_ctx);
-        else
+        } else {
+            if (is_critical_event(ctx->event_id)) {
+                vdec_save_context(strm_ctx, 0);
+            }
             ret = vdec_stream_switch_out(strm_ctx);
-
+        }
         if (ret) {
             VMETA_LOGE("can't switch out %p(%p)", ctrl, strm_ctx);
             goto bail;
@@ -2154,10 +2033,14 @@ static TEE_Result ta_vpu_ctx_switch_inst(VPU_SESSION_CTX * session_ctx,
 
         strm_ctx = ctx->strm_ctx;
 
-        if (ctx->is_encoder)
+        if (ctx->is_encoder) {
             ret = venc_stream_switch_in(strm_ctx);
-        else
+        } else {
             ret = vdec_stream_switch_in(strm_ctx);
+            if (is_critical_event(ctx->event_id)) {
+                vdec_load_context(strm_ctx, 0);
+            }
+        }
 
         if (ret) {
             VMETA_LOGE("can't switch in %p(%p)", ctrl, strm_ctx);

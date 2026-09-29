@@ -114,7 +114,7 @@ HRESULT BCM_SECUREVMX_GETKEYID(UINT8* AddrKeyID)
     BCM_MAILBOX_STATUS status;
     UINT8* phyAddrKeyID = NULL;
 
-    phyAddrKeyID  = TEE_VirtToPhys(AddrKeyID);
+    phyAddrKeyID  = (UINT8 *)TEE_VirtToPhys(AddrKeyID);
 
 #ifdef BCM_DEBUG
     printf("%s: %d", __func__, __LINE__);
@@ -163,10 +163,10 @@ HRESULT BCM_SECUREVMX_KEYLADDER(UINT8* AddrSCHEMEKey, UINT32 uSCHEMEKeylen,
     UINT8*  phyAddrECMKey = NULL;
     UINT8*  phyAddrCWC = NULL;
 
-    phyAddrSCHEMEKey = TEE_VirtToPhys(AddrSCHEMEKey);
-    phyAddrEMMKey = TEE_VirtToPhys(AddrEMMKey);
-    phyAddrECMKey = TEE_VirtToPhys(AddrECMKey);
-    phyAddrCWC    = TEE_VirtToPhys(AddrCWC);
+    phyAddrSCHEMEKey = (UINT8 *)TEE_VirtToPhys(AddrSCHEMEKey);
+    phyAddrEMMKey = (UINT8 *)TEE_VirtToPhys(AddrEMMKey);
+    phyAddrECMKey = (UINT8 *)TEE_VirtToPhys(AddrECMKey);
+    phyAddrCWC    = (UINT8 *)TEE_VirtToPhys(AddrCWC);
 #ifdef BCM_DEBUG
     printf("%s: %d", __func__, __LINE__);
     printf("show the address as below:\n");
@@ -218,7 +218,7 @@ HRESULT BCM_SECUREVMX_LOADCW(UINT8* AddrKeyBuffer, UINT32 uKeySize,
     BCM_MAILBOX_STATUS status;
     UINT8* phyAddrKeyBuffer = NULL;
 
-    phyAddrKeyBuffer  = TEE_VirtToPhys(AddrKeyBuffer);
+    phyAddrKeyBuffer  = (UINT8 *)TEE_VirtToPhys(AddrKeyBuffer);
 #ifdef BCM_DEBUG
     printf("%s: %d", __func__, __LINE__);
     printf("show the address as below:\n");
@@ -268,10 +268,10 @@ HRESULT BCM_SECURER2R_KEYLADDER (UINT8* AddrL1Key, UINT8* AddrL2Key,
     UINT8*  phyAddrDataIn = NULL;
     UINT8*  phyAddrDataOut = NULL;
 
-    phyAddrL1Key = TEE_VirtToPhys(AddrL1Key);
-    phyAddrL2Key = TEE_VirtToPhys(AddrL2Key);
-    phyAddrDataIn = TEE_VirtToPhys(AddrDataIn);
-    phyAddrDataOut = TEE_VirtToPhys(AddrDataOut);
+    phyAddrL1Key = (UINT8 *)TEE_VirtToPhys(AddrL1Key);
+    phyAddrL2Key = (UINT8 *)TEE_VirtToPhys(AddrL2Key);
+    phyAddrDataIn = (UINT8 *)TEE_VirtToPhys(AddrDataIn);
+    phyAddrDataOut = (UINT8 *)TEE_VirtToPhys(AddrDataOut);
 #ifdef BCM_DEBUG
     printf("%s: %d\n", __func__, __LINE__);
     printf("show the address as below:\n");
@@ -318,8 +318,8 @@ HRESULT BCM_SECUREPVR_GENERATEKEY(UINT32 uKeyLength, UINT8* AddrKey, UINT8* Addr
     UINT8* phyAddrKey = NULL;
     UINT8* phyAddrKeySize =NULL;
 
-    phyAddrKey  = TEE_VirtToPhys(AddrKey);
-    phyAddrKeySize  = TEE_VirtToPhys(AddrKeySize);
+    phyAddrKey  = (UINT8 *)TEE_VirtToPhys(AddrKey);
+    phyAddrKeySize  = (UINT8 *)TEE_VirtToPhys(AddrKeySize);
 #ifdef BCM_DEBUG
     printf("%s: %d", __func__, __LINE__);
     printf("show the address as below:\n");
@@ -360,7 +360,7 @@ HRESULT BCM_SECUREPVR_LOADKEY(UINT8* AddrKey, UINT32 uKeySize,
     BCM_MAILBOX_STATUS status;
     UINT8* phyAddrKey = NULL;
 
-    phyAddrKey  = TEE_VirtToPhys(AddrKey);
+    phyAddrKey  = (UINT8 *)TEE_VirtToPhys(AddrKey);
 #ifdef BCM_DEBUG
     printf("%s: %d", __func__, __LINE__);
     printf("show the address as below:\n");
@@ -398,7 +398,7 @@ HRESULT BCM_HDCP1X_LOADTXKEY(UINT8* AddrKey, UINT32 uKeySize)
     BCM_MAILBOX_STATUS status;
     UINT8* phyAddrKey = NULL;
 
-    phyAddrKey  = TEE_VirtToPhys(AddrKey);
+    phyAddrKey  = (UINT8 *)TEE_VirtToPhys(AddrKey);
 #ifdef BCM_DEBUG
     printf("%s: %d", __func__, __LINE__);
 
@@ -434,7 +434,7 @@ HRESULT BCM_HDCP1X_LOADRXKEY(UINT8* AddrKey, UINT32 uKeySize)
     BCM_MAILBOX_STATUS status;
     UINT8* phyAddrKey = NULL;
 
-    phyAddrKey  = TEE_VirtToPhys(AddrKey);
+    phyAddrKey  = (UINT8 *)TEE_VirtToPhys(AddrKey);
 #ifdef BCM_DEBUG
     printf("%s: %d", __func__, __LINE__);
     printf("show the address as below:\n");
@@ -469,7 +469,7 @@ HRESULT BCM_HDCP2X_LOADLC(UINT8* AddrKey, UINT32 uKeySize)
     BCM_MAILBOX_STATUS status;
     UINT8* phyAddrKey = NULL;
 
-    phyAddrKey  = TEE_VirtToPhys(AddrKey);
+    phyAddrKey  = (UINT8 *)TEE_VirtToPhys(AddrKey);
 #ifdef BCM_DEBUG
     printf("%s: %d", __func__, __LINE__);
     printf("show the address as below:\n");
@@ -508,8 +508,8 @@ HRESULT BCM_OTP_BURNLAYOUT(UINT8* AddrLayout, UINT32 uLayoutSize, UINT8* AddrRes
     UINT8* phyAddrLayout = NULL;
     UINT8* phyAddrResp = NULL;
 
-    phyAddrLayout  = TEE_VirtToPhys(AddrLayout);
-    phyAddrResp  = TEE_VirtToPhys(AddrResp);
+    phyAddrLayout  = (UINT8 *)TEE_VirtToPhys(AddrLayout);
+    phyAddrResp  = (UINT8 *)TEE_VirtToPhys(AddrResp);
 #ifdef BCM_DEBUG
     printf("%s: %d", __func__, __LINE__);
 
@@ -546,7 +546,7 @@ HRESULT BCM_SECUREVMX_GETRANDOM(UINT8* addrRandom, UINT32 uRandomSize)
     BCM_MAILBOX_STATUS status;
     UINT8* phyAddrRandom = NULL;
 
-    phyAddrRandom  = TEE_VirtToPhys(addrRandom);
+    phyAddrRandom  = (UINT8 *)TEE_VirtToPhys(addrRandom);
 #ifdef BCM_DEBUG
     printf("%s: %d", __func__, __LINE__);
     printf("show the address as below:\n");
@@ -586,7 +586,7 @@ HRESULT BCM_LOADCONTENTKEY(UINT32 keyIndexOffset, UINT32 uMode, UINT32 uKeySize,
     BCM_MAILBOX_STATUS status;
     UINT8* phyAddrIn = NULL;
 
-    phyAddrIn  = TEE_VirtToPhys(AddrIn);
+    phyAddrIn  = (UINT8 *)TEE_VirtToPhys(AddrIn);
 #ifdef BCM_DEBUG
     printf("%s: %d\n", __func__, __LINE__);
     printf("show the address as below:\n");
@@ -629,7 +629,7 @@ HRESULT BCM_SECURE_LOADCONTENTKEY(UINT8* addrData, UINT32 uDataType, UINT32 uSiz
     BCM_MAILBOX_STATUS status;
     UINT8* phyAddrData = NULL;
 
-    phyAddrData  = TEE_VirtToPhys(addrData);
+    phyAddrData  = (UINT8 *)TEE_VirtToPhys(addrData);
 #ifdef BCM_DEBUG
     printf("%s: %d", __func__, __LINE__);
     printf("show the address as below:\n");
@@ -813,7 +813,7 @@ HRESULT BCM_READ_PUB_OTP(UINT32 uTag, UINT8* AddrOtpBuffer, UINT32 uOtpBufferLen
     BCM_MAILBOX_STATUS status;
     UINT8*  phyAddrBuffer = NULL;
 
-    phyAddrBuffer = TEE_VirtToPhys(AddrOtpBuffer);
+    phyAddrBuffer = (UINT8 *)TEE_VirtToPhys(AddrOtpBuffer);
 
     bcm_clear_command(&cmd);
     bcm_clear_status(&status);
@@ -844,7 +844,7 @@ HRESULT BCM_READ_OTP_JTAG(UINT8 *AddrJtag)
     BCM_MAILBOX_STATUS status;
     UINT8* phyAddrJtag = NULL;
 
-    phyAddrJtag = TEE_VirtToPhys(AddrJtag);
+    phyAddrJtag = (UINT8 *)TEE_VirtToPhys(AddrJtag);
 
     bcm_clear_command(&cmd);
     bcm_clear_status(&status);
@@ -873,7 +873,7 @@ HRESULT BCM_GENX_OEM_COMMAND(UINT8* AddrOEMCommand, UINT32 uOEMCommandSize)
     BCM_MAILBOX_STATUS status;
     UINT8* phyAddrKey = NULL;
 
-    phyAddrKey  = TEE_VirtToPhys(AddrOEMCommand);
+    phyAddrKey  = (UINT8 *)TEE_VirtToPhys(AddrOEMCommand);
 #ifdef BCM_DEBUG
     printf("%s: %d", __func__, __LINE__);
     printf("show the address as below:\n");
@@ -908,7 +908,7 @@ HRESULT BCM_READ_PUBLIC_OTP_ITEMS(UINT8 *AddrPubOTP, UINT32 uPubOTPLen)
     BCM_MAILBOX_STATUS status;
     UINT8* phyAddrPubOTP = NULL;
 
-    phyAddrPubOTP = TEE_VirtToPhys(AddrPubOTP);
+    phyAddrPubOTP = (UINT8 *)TEE_VirtToPhys(AddrPubOTP);
 
     bcm_clear_command(&cmd);
     bcm_clear_status(&status);
@@ -938,7 +938,7 @@ HRESULT BCM_READ_SOC_UID(UINT8 *AddrSOCUID, UINT32 uSOCUIDLen)
     BCM_MAILBOX_STATUS status;
     UINT8* phyAddrSOCUID = NULL;
 
-    phyAddrSOCUID = TEE_VirtToPhys(AddrSOCUID);
+    phyAddrSOCUID = (UINT8 *)TEE_VirtToPhys(AddrSOCUID);
 
     bcm_clear_command(&cmd);
     bcm_clear_status(&status);
@@ -968,7 +968,7 @@ HRESULT BCM_WRITE_RKEKID(UINT8 *AddrRKEKID, UINT32 uRKEKIDLen)
     BCM_MAILBOX_STATUS status;
     UINT8 *phyRKEKID = NULL;
 
-    phyRKEKID  = TEE_VirtToPhys(AddrRKEKID);
+    phyRKEKID  = (UINT8 *)TEE_VirtToPhys(AddrRKEKID);
 
     bcm_clear_command(&cmd);
     bcm_clear_status(&status);

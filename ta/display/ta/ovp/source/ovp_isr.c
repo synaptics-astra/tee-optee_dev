@@ -303,7 +303,7 @@ static INT OVP_commitCmd(OVP_OBJ *pstOvpObj)
 
 	uiShmOffset = offsetof(OVP_CMD_OBJ, stOvpBufInfo);
 #ifdef CONFIG_AMP_TEE_ENABLE
-	TEE_FlushCache(&pstOvpObj->pOvp_cmd_obj->stOvpBufInfo, sizeof(SIE_OvpCmd));
+	TEE_FlushCache((void*)&pstOvpObj->pOvp_cmd_obj->stOvpBufInfo, sizeof(SIE_OvpCmd));
 	uiCmdAddr = pstOvpObj->pOvp_cmd_obj->m_uiPhyAddr + uiShmOffset;
 #else
 	//AMP_SHM_CleanCache(pstOvpObj->m_uiShmHandle, uiShmOffset ,sizeof(SIE_OvpCmd));
@@ -428,7 +428,7 @@ INT OVP_ProcessFrame(OVP_MSG_HEADER_T *pstOvpMsgHeader, UINT uiIntrStat)
 		pstOvpObj = ovp->m_pOvp_objs[uiLoopCount];
 		pstOvpBufInfo = &pstOvpObj->pOvp_cmd_obj->stOvpBufInfo;
 
-		TEE_FlushCache(pstOvpBufInfo, sizeof(SIE_OvpCmd));
+		TEE_FlushCache((void*)pstOvpBufInfo, sizeof(SIE_OvpCmd));
 		//AMP_SHM_CleanCache(pstOvpObj->m_uiShmHandle, 0, sizeof(OVP_OBJ));
 
 		if(pstOvpBufInfo->uReturn_Done & 0x1) {

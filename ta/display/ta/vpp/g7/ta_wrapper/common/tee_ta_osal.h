@@ -26,7 +26,7 @@ typedef MV_OSAL_HANDLE  MV_OSAL_HANDLE_MUTEX_t;
 typedef MV_OSAL_HANDLE  *pMV_OSAL_HANDLE_MUTEX_t;
 typedef MV_OSAL_HANDLE 	MV_OSAL_HANDLE_TASK_t;
 
-typedef UINT32                  AMP_SHM_HANDLE;
+typedef uintptr_t AMP_SHM_HANDLE;
 
 
 typedef struct {

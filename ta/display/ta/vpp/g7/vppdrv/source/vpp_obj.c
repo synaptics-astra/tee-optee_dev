@@ -239,7 +239,7 @@ int MV_VPP_GetVppObjAddr(void)
 int MV_VPP_InitVppObj(VPP_INIT_PARM *vpp_init_parm)
 {
     TEE_Result res = TEE_SUCCESS;
-    UINT32 addr;
+    uintptr_t addr;
 
     if (g_vpp != NULL) {
         res = MV_VPP_EBADCALL;

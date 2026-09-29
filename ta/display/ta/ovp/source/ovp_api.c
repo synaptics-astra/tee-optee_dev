@@ -400,7 +400,8 @@ int MV_OVP_InitOvpCmdObj(UINT32 phShm, UINT32 shmSize)
 	/* Retrieve the value from VPP_BUFF_HANDLE */
 	for (uiLoopCount = 0; uiLoopCount < ovp->m_uchNoOfObjs; uiLoopCount++) {
 		ovp->m_pOvp_objs[uiLoopCount]->pOvp_cmd_obj = (OVP_CMD_OBJ *)(virt_addr + (uiLoopCount * OVPD_HW_CMD_SHM_SIZE_PER_CTX));
-		ovp->m_pOvp_objs[uiLoopCount]->pOvp_cmd_obj->m_uiPhyAddr = ovp->bufHandle.phy_addr + (uiLoopCount  * OVPD_HW_CMD_SHM_SIZE_PER_CTX);
+		ovp->m_pOvp_objs[uiLoopCount]->pOvp_cmd_obj->m_uiPhyAddr =
+			(UINT)((uintptr_t)ovp->bufHandle.phy_addr + (uiLoopCount * OVPD_HW_CMD_SHM_SIZE_PER_CTX));
 		OVP_DBG_ERROR("%s: pOvp_cmd_obj[%d]:%x, phy_addr: %x\n", __func__, uiLoopCount, ovp->m_pOvp_objs[uiLoopCount]->pOvp_cmd_obj,
 				ovp->m_pOvp_objs[uiLoopCount]->pOvp_cmd_obj->m_uiPhyAddr);
 	}

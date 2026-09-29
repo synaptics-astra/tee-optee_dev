@@ -1363,13 +1363,13 @@ typedef struct VPP_OBJ_T {
     VOUT_DISP_MODE m_VoutMode;     // default, ovl, pip, gfx1, gfx2
     EVENT_CALLBACK event_cb[MAX_NUM_EVENTS]; // event callbacks
 
-    INT base_addr;       // VPP object hardware base address
-    INT hdtx_base_addr;       // HDTX hardware base address
-    INT dcm_base_addr_mp;  //VPP DCM hardware base address
-    INT dcm_base_addr_gfx;  //VPP DCM hardware base address
-    INT base_addr_mp;
-    INT base_addr_gfx_vop;
-    INT base_addr_avioMtr;
+    UINT32 base_addr;       // VPP object hardware base address
+    UINT32 hdtx_base_addr;       // HDTX hardware base address
+    UINT32 dcm_base_addr_mp;  //VPP DCM hardware base address
+    UINT32 dcm_base_addr_gfx;  //VPP DCM hardware base address
+    UINT32 base_addr_mp;
+    UINT32 base_addr_gfx_vop;
+    UINT32 base_addr_avioMtr;
 
     FE fe;               // FE hardware related settings
     SCL scl;             // SCL hardware related settings

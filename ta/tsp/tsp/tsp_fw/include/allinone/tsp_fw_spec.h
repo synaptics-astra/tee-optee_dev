@@ -10153,7 +10153,8 @@
 ///                                    : 96b_block                 0x3
 ///                                    : 128b_block                0x4
 ///                                    : 256b_block                0x8
-///               %unsigned 2  Reserved2                 0x0
+///               %unsigned 1  IsTLV                     0x0
+///               %unsigned 1  Reserved2                 0x0
 ///               %unsigned 8  ContinuityErrorCnt        0x0
 ///               %unsigned 8  TSRecord_NoOutputSpaceCnt 0x0
 ///               %unsigned 8  Pes_NoOutputSpaceCnt      0x0
@@ -10494,12 +10495,19 @@
     #define        PidFilterCtx_DecrytionBlockSize_128b_block               0x4
     #define        PidFilterCtx_DecrytionBlockSize_256b_block               0x8
 
+    #define     BA_PidFilterCtx_IsTLV                          0x0014
+    #define     B16PidFilterCtx_IsTLV                          0x0014
+    #define   LSb32PidFilterCtx_IsTLV                             6
+    #define   LSb16PidFilterCtx_IsTLV                             6
+    #define       bPidFilterCtx_IsTLV                          1
+    #define   MSK32PidFilterCtx_IsTLV                             0x00000040
+
     #define     BA_PidFilterCtx_Reserved2                      0x0014
     #define     B16PidFilterCtx_Reserved2                      0x0014
-    #define   LSb32PidFilterCtx_Reserved2                         6
-    #define   LSb16PidFilterCtx_Reserved2                         6
-    #define       bPidFilterCtx_Reserved2                      2
-    #define   MSK32PidFilterCtx_Reserved2                         0x000000C0
+    #define   LSb32PidFilterCtx_Reserved2                         7
+    #define   LSb16PidFilterCtx_Reserved2                         7
+    #define       bPidFilterCtx_Reserved2                      1
+    #define   MSK32PidFilterCtx_Reserved2                         0x00000080
 
     #define     BA_PidFilterCtx_ContinuityErrorCnt             0x0015
     #define     B16PidFilterCtx_ContinuityErrorCnt             0x0014
@@ -10862,10 +10870,15 @@
     #define   GET16PidFilterCtx_DecrytionBlockSize(r16)        _BFGET_(r16, 5, 2)
     #define   SET16PidFilterCtx_DecrytionBlockSize(r16,v)      _BFSET_(r16, 5, 2,v)
 
-    #define   GET32PidFilterCtx_Reserved2(r32)                 _BFGET_(r32, 7, 6)
-    #define   SET32PidFilterCtx_Reserved2(r32,v)               _BFSET_(r32, 7, 6,v)
-    #define   GET16PidFilterCtx_Reserved2(r16)                 _BFGET_(r16, 7, 6)
-    #define   SET16PidFilterCtx_Reserved2(r16,v)               _BFSET_(r16, 7, 6,v)
+    #define   GET32PidFilterCtx_IsTLV(r32)                     _BFGET_(r32, 6, 6)
+    #define   SET32PidFilterCtx_IsTLV(r32,v)                   _BFSET_(r32, 6, 6,v)
+    #define   GET16PidFilterCtx_IsTLV(r16)                     _BFGET_(r16, 6, 6)
+    #define   SET16PidFilterCtx_IsTLV(r16,v)                   _BFSET_(r16, 6, 6,v)
+
+    #define   GET32PidFilterCtx_Reserved2(r32)                 _BFGET_(r32, 7, 7)
+    #define   SET32PidFilterCtx_Reserved2(r32,v)               _BFSET_(r32, 7, 7,v)
+    #define   GET16PidFilterCtx_Reserved2(r16)                 _BFGET_(r16, 7, 7)
+    #define   SET16PidFilterCtx_Reserved2(r16,v)               _BFSET_(r16, 7, 7,v)
 
     #define   GET32PidFilterCtx_ContinuityErrorCnt(r32)        _BFGET_(r32,15, 8)
     #define   SET32PidFilterCtx_ContinuityErrorCnt(r32,v)      _BFSET_(r32,15, 8,v)
@@ -10885,7 +10898,8 @@
             UNSG32 u_TransPrioCtrl                             :  1;
             UNSG32 u_TransPrioSelect                           :  1;
             UNSG32 u_DecrytionBlockSize                        :  4;
-            UNSG32 u_Reserved2                                 :  2;
+            UNSG32 u_IsTLV                                     :  1;
+            UNSG32 u_Reserved2                                 :  1;
             UNSG32 u_ContinuityErrorCnt                        :  8;
             UNSG32 u_TSRecord_NoOutputSpaceCnt                 :  8;
             UNSG32 u_Pes_NoOutputSpaceCnt                      :  8;

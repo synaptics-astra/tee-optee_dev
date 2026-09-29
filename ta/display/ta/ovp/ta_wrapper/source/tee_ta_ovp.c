@@ -116,9 +116,9 @@ TEE_Result TA_EXPORT TA_CreateEntryPoint(void)
 	void *va;
 
 #ifdef CONFIG_OPTEE
-	result = TEE_TA_Register_RegRegion((void*)MEMMAP_OVP_REG_BASE, MEMMAP_OVP_REG_SIZE, 0, 0, &va);
+	result = TEE_TA_Register_RegRegion(MEMMAP_OVP_REG_BASE, MEMMAP_OVP_REG_SIZE, 0, 0, &va);
 #else
-	result = TEE_Map_Register((void*)MEMMAP_OVP_REG_BASE, MEMMAP_OVP_REG_SIZE, 0, 0, &va);
+	result = TEE_Map_Register(MEMMAP_OVP_REG_BASE, MEMMAP_OVP_REG_SIZE, 0, 0, &va);
 #endif
 
 	if ( result != TEE_SUCCESS )

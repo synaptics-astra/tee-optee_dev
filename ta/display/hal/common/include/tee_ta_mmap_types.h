@@ -7,8 +7,8 @@
 #include "com_type.h"
 
 typedef struct __TEE_TA__REGISTER_REGION_NODE__ {
-    UINT32 phy_addr;
-    UINT32 phy_addr_end;
+    paddr_t phy_addr;
+    paddr_t phy_addr_end;
     void *virt_addr;
     UINT32 size;
 } TEE_TA_REGISTER_REGION_NODE;

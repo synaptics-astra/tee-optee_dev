@@ -190,7 +190,7 @@ TEE_Result VPP_BUFF_Register(VPP_BUFF_HANDLE *pBufHandle) {
     }
 
     phy_size = VPP_SHM_ALIGN_ROUNDUP(pBufHandle->size);
-    res = TEE_Register_Memory(pBufHandle->phy_addr, phy_size, &pBufHandle->mem_id);
+    res = TEE_Register_Memory((paddr_t)(uintptr_t)pBufHandle->phy_addr, phy_size, &pBufHandle->mem_id);
     if (TEE_SUCCESS != res) {
         VPPBUFF_LOGF("res = %lu Unknown error while register memory for : %x!\n", res,
                         pBufHandle->phy_addr);
@@ -200,15 +200,19 @@ TEE_Result VPP_BUFF_Register(VPP_BUFF_HANDLE *pBufHandle) {
 
 TEE_Result VPP_BUFF_GetPhyAddr(VPP_BUFF_HANDLE *pBufHandle) {
     TEE_Result res;
+    paddr_t phys_addr;
 
     if (!pBufHandle) {
         return TEE_ERROR_BAD_PARAMETERS;
     }
 
-    res = TEE_GetPhys_By_Memid(pBufHandle->mem_id, &pBufHandle->phy_addr);
+    res = TEE_GetPhys_By_Memid(pBufHandle->mem_id, &phys_addr);
     if (res != TEE_SUCCESS) {
         VPPBUFF_LOGF("Failed to retrieve phy_addr from memid (res=%lx) : memid=%lx, %x = %p\n",
                 res, pBufHandle->mem_id, pBufHandle->size, pBufHandle->phy_addr);
+    } else {
+        pBufHandle->phy_addr = (void*)(uintptr_t)phys_addr;
     }
+
     return res;
 }

@@ -22,6 +22,7 @@
 #include "tee_api_types.h"
 #include "tee_api_syna.h"
 #include "tee_ta_mmap.h"
+#include "tee_dhub_memmap.h"
 #endif
 
 #define LOG_TAG "TA_DHUB"
@@ -38,22 +39,22 @@ TEE_Result Dhub_TA_AddMemMap(void)
     void *va;
     TEE_Result result =TEE_SUCCESS;
     int Memmap_count=0;
-    unsigned int temp_size;
 
 #ifdef CONFIG_OPTEE
-    result=TEE_TA_Register_RegRegion((void*)MEMMAP_AVIO_REG_BASE, 0xc0000, 0, 0, &va);
+    result=TEE_TA_Register_RegRegion(MEMMAP_AVIO_REG_BASE, 0xc0000, 0, 0, &va);
     if(result != TEE_SUCCESS)
         goto failure;
     else
         Memmap_count++;
 #else
-    result=TEE_Map_Register((void*)MEMMAP_AVIO_REG_BASE + AVIO_MEMMAP_VPP128B_DHUB_REG_BASE, AVIO_MEMMAP_VPP128B_DHUB_REG_SIZE, 0, 0, &va);
+    unsigned int temp_size;
+    result=TEE_Map_Register(MEMMAP_AVIO_REG_BASE + AVIO_MEMMAP_VPP128B_DHUB_REG_BASE, AVIO_MEMMAP_VPP128B_DHUB_REG_SIZE, 0, 0, &va);
     if(result != TEE_SUCCESS)
        goto failure;
     else
        Memmap_count++;
 
-    result=TEE_Map_Register((void*)MEMMAP_AVIO_REG_BASE + AVIO_MEMMAP_AIO64B_DHUB_REG_BASE, AVIO_MEMMAP_AIO64B_DHUB_REG_SIZE, 0, 0, &va);
+    result=TEE_Map_Register(MEMMAP_AVIO_REG_BASE + AVIO_MEMMAP_AIO64B_DHUB_REG_BASE, AVIO_MEMMAP_AIO64B_DHUB_REG_SIZE, 0, 0, &va);
     if(result != TEE_SUCCESS)
        goto failure;
     else
